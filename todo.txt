@@ -1,0 +1,13 @@
+* include klopfen
+* include spritzen
+
+
+** warum brauchts 2 policies in ppo? eigentlich wird immer nur eine her genommen
+
+* evaluiere ein spiel states/actions ,...
+* verbesssere input state
+* overfitte auf ein spiel
+
+* performance
+    * multiprocessing to parallelize played games
+    * allow minibatches of collected trajectories => larger memories => more stable training

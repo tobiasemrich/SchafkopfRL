@@ -1,0 +1,137 @@
+class Rules():
+  def __init__(self):
+    self.card_number = ['siebener',
+                        'achter',
+                        'neuner',
+                        'unter',
+                        'ober',
+                        'koenig',
+                        'zehner',
+                        'sau']
+
+    self.card_color = ['schellen', 'herz', 'gras', 'eichel']
+
+    self.card_scores = [0, 0, 0, 2, 3, 4, 10, 11]
+
+    ############## schelle # herz # gras # eichel #
+    self.cards = [[0, 0], [1, 0], [2, 0], [3, 0],  # siebener
+                  [0, 1], [1, 1], [2, 1], [3, 1],  # achter
+                  [0, 2], [1, 2], [2, 2], [3, 2],  # neuner
+                  [0, 3], [1, 3], [2, 3], [3, 3],  # unter
+                  [0, 4], [1, 4], [2, 4], [3, 4],  # ober
+                  [0, 5], [1, 5], [2, 5], [3, 5],  # koenig
+                  [0, 6], [1, 6], [2, 6], [3, 6],  # zehner
+                  [0, 7], [1, 7], [2, 7], [3, 7]]  # sau
+
+    self.game_names = ['sauspiel', 'wenz', 'solo']
+
+    ############# schelle # herz # gras # eichel #
+    self.games = [[None, None],                     # no game
+                  [0, 0], [2, 0], [3, 0],           # sauspiel
+                  [None, 1],                        # wenz
+                  [0, 2], [1, 2], [2, 2], [3, 2]]   # solo
+
+
+    self.reward_basic = [0, 20, 50, 50]  # no game, sauspiel, solo, wenz
+    self.reward_schneider = [0, 10, 20]  # normal, schneider, schneider schwarz
+    self.winning_thresholds = [0, 30, 60, 90, 119]
+
+    self.reward_laufende = 10
+    self.min_laufende = [3, 2, 3]  # sauspiel, solo, wenz
+
+
+
+  '''
+  returns true if card2 is higher than card1 assuming card 1 gets played before card 2 in the same trick
+  '''
+  def higher_card(self, game_type, card1, card2):
+    trumps = self.get_sorted_trumps(game_type)
+    if card1 not in trumps:
+      if card2 not in trumps:
+        if card2[0] != card1[0] or card2[1] < card1[1]: # not lead color or smaller value
+          return False
+        else:
+          return True
+      else:
+        return True
+    else:
+      if card2 not in trumps:
+        return False
+      else: # both cards are trumps
+        if trumps.index(card1) < trumps.index(card2):
+          return True
+        else:
+          return False
+
+  '''
+  return sorted list of trumps ascending
+  '''
+  def get_sorted_trumps(self, game_type):
+    if game_type[1] == 0: #Sauspiel
+      trump_colors = [1]  # Herz
+      trump_numbers = [3, 4]  # Unter, Ober
+
+    elif game_type[1] == 2: #Solo
+      trump_colors = [game_type[0]]
+      trump_numbers = [3, 4]
+    else:  # wenz
+      trump_colors = []
+      trump_numbers = [3]
+
+    trumps_color = [[color, number] for color, number in self.cards if color in trump_colors and number not in trump_numbers]
+    trumps_number = [[color, number] for color, number in self.cards if number in trump_numbers]
+
+    return trumps_color + trumps_number
+
+  #all games are allowed except
+  # - Sauspiel with color that player does not have
+  # - Sauspiel with color that player has the ace
+  def allowed_games(self, player_cards):
+    allowed_games = self.games.copy()
+
+    playable_colors = {color for [color, number] in player_cards if
+                                        number != 3 and #unter
+                                        number != 4 and #ober
+                                        color != 1 and #herz
+                                        [color, 7] not in player_cards} #not the ace
+    for c in [0, 2, 3]:
+      if c not in playable_colors:
+        allowed_games.remove([c, 0])
+
+    return allowed_games
+
+  def allowed_cards(self, game_state, player):
+    allowed_cards = []
+
+    trumps = self.get_sorted_trumps(game_state.game_type)
+    rufsau = [game_state.game_type[0], 7] #might be invalid if a solo is played
+
+    first_player_of_trick = game_state.first_player if game_state.trick_number == 0 else game_state.trick_owner[game_state.trick_number-1]
+    if player.id == first_player_of_trick: # first player in this trick
+      allowed_cards = player.cards.copy()
+      # exception is the Rufsau color
+
+      if game_state.game_type[1] == 0 and rufsau in player.cards and not player.davongelaufen:
+        ruf_sau_color_cards = [card for card in player.cards if (card[0] == game_state.game_type[0] and card not in trumps and card != rufsau)]
+        if len(ruf_sau_color_cards) < 3:
+          for c in ruf_sau_color_cards:
+            allowed_cards.remove(c)
+    else:
+      first_card = game_state.course_of_game_playerwise[game_state.trick_number][first_player_of_trick]
+      if first_card in trumps:
+        player_trumps = [card for card in player.cards if card in trumps]
+        if len(player_trumps) > 0:
+          allowed_cards = player_trumps
+        else:
+          allowed_cards = player.cards.copy()
+      else: # color of first card not trump
+        if game_state.game_type[1] == 0 and game_state.game_type[0] == first_card[0] and rufsau in player.cards and not player.davongelaufen:
+          # if the player has the Suchsau and the color is played and he has not davongelaufen then he has to play the ace
+          allowed_cards = [rufsau]
+        else:
+          player_first_color_cards = [card for card in player.cards if card[0] == first_card[0] and card not in trumps]
+          if len(player_first_color_cards) > 0:
+            allowed_cards = player_first_color_cards
+          else:
+            allowed_cards = player.cards.copy()
+    return allowed_cards

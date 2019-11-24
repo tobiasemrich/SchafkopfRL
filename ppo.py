@@ -1,20 +1,15 @@
+import time
 from os import listdir
 
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils import data
-
-from experience_dataset import ExperienceDataset, custom_collate
-from models.actor_critic import ActorCriticNetwork
-from game_simulation import Game_Simulation
-from models.actor_critic2 import ActorCriticNetwork2
 from models.actor_critic3 import ActorCriticNetwork3
-
+from torch.utils import data
 from torch.utils.tensorboard import SummaryWriter
 
-import time
-
+from experience_dataset import ExperienceDataset, custom_collate
+from game_simulation import Game_Simulation
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,12 +27,10 @@ class PPO:
         self.c1 = c1
         self.c2 = c2
 
-        #self.policy = ActorCritic(state_dim, action_dim, n_latent_var).to(device)
         self.policy = policy.to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(),
                                           lr=lr, betas=betas, weight_decay=1e-4)
-        #self.policy_old = ActorCritic(state_dim, action_dim, n_latent_var).to(device)
-        #self.policy_old = ActorCriticNetwork().to(device)
+
         self.policy_old = type(policy)().to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
@@ -66,25 +59,13 @@ class PPO:
             rewards.insert(0, discounted_reward)
 
         # Normalizing the rewards:
-        #rewards = torch.tensor(rewards).to(device)
-        #rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
         rewards = np.array(rewards)
         rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-5)
 
+        # Create dataset from collected experiences
         experience_dataset = ExperienceDataset(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
         training_generator = data.DataLoader(experience_dataset, collate_fn=custom_collate, batch_size=self.batch_size)
 
-        # convert list to tensor
-        #old_states = []
-        #transposed_states = list(map(list, zip(*memory.states)))
-        #old_states.append(torch.stack(transposed_states[0]).to(device).detach())
-
-        #sequences = [torch.squeeze(seq[0], dim=1).to(device).detach() for seq in transposed_states[1]]
-        #old_states.append(sequences)
-
-        #old_actions = torch.stack(memory.actions).to(device).detach()
-        #old_allowed_actions = torch.stack(memory.allowed_actions).to(device).detach()
-        #old_logprobs = torch.stack(memory.logprobs).to(device).detach()
 
         # Optimize policy for K epochs:
         avg_loss = 0
@@ -124,7 +105,7 @@ class PPO:
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
-        self.writer.add_scalar('Loss/train', avg_loss/count, i_episode)
+        self.writer.add_scalar('Loss/policy_loss', avg_loss/count, i_episode)
         self.writer.add_scalar('Loss/value_loss', avg_value_loss / count, i_episode)
         self.writer.add_scalar('Loss/entropy', avg_entropy / count, i_episode)
 
@@ -165,43 +146,16 @@ def evaluate(checkpoint_folder, model_class, eval_file, runs):
         f.write("\n")
         f.close
 
-def evaluate_single(checkpoint_folder, model_class, eval_file, runs, random_policy):
-    generations = [int(f[:6]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
-    if len(generations) > 0:
-        max_gen = max(generations)
-        f = open(eval_file, "a+")
-
-
-        policy = model_class()
-        policy.to(device='cuda')
-        policy.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(6) + ".pt"))
-
-        gs = Game_Simulation(policy, random_policy, random_policy, random_policy, 1)
-        all_rewards = np.array([0, 0, 0, 0])
-        for j in range(runs):
-            game_state = gs.run_simulation()
-            rewards = np.array(game_state.get_rewards())
-            all_rewards += rewards
-
-        f.write(str(max_gen) + " : " + str(all_rewards[0]))
-        f.write("\n")
-        f.close
-
-
-
 def main():
 
     ############## Hyperparameters ##############
-    log_interval = 2000  # print some logs in this interval
     max_episodes = 900000  # max training episodes
 
-
-    update_timestep = 2000  # update policy every n games #<------------------------------------change to 100
-    evaluate_timestep = 10000 #save checkpoints every n
+    update_timestep = 2000  # update policy every n games
+    evaluate_timestep = 10000 #save checkpoints every n games
     checkpoint_folder = "policies"
 
-
-    lr = 0.00005
+    lr = 0.00001
     betas = (0.9, 0.999)
     gamma = 0.99  # discount factor
     K_epochs = 8  # update policy for K epochs
@@ -213,15 +167,13 @@ def main():
 
     model = ActorCriticNetwork3
 
-
     # creating environment
     if random_seed:
         torch.manual_seed(random_seed)
 
-
     #loading initial policy
     policy = model()
-    policy.to(device='cuda')
+    policy.to(device)
     # take the newest generation available
     # file pattern = policy-000001.pt
     max_gen = 0
@@ -230,24 +182,24 @@ def main():
         max_gen = max(generations)
         policy.load_state_dict(torch.load(checkpoint_folder+"/" + str(max_gen).zfill(6) + ".pt"))
 
+    #create ppo
     ppo = PPO(policy, lr, betas, gamma, K_epochs, eps_clip, batch_size, c1=c1, c2=c2)
 
-    #logging
+    #some logging counts
     game_count = [0, 0, 0, 0] #weiter, sauspiel, wenz, solo
     won_game_count = [0, 0, 0, 0]
 
-
+    #create a game simulation
     gs = Game_Simulation(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)  #<------------------------------------remove seed
 
 
     # training loop
     for i_episode in range(max_gen+1, max_episodes + 1):
-        # Running policy_old:
 
+        # Running policy_old:
         t0 = time.time_ns()
         game_state = gs.run_simulation()
         t1 = time.time_ns()
-        #running_reward += game_state.get_rewards()[0]
 
         if game_state.game_type[1] == None:
             game_count[0] +=1
@@ -266,14 +218,13 @@ def main():
             gs = Game_Simulation(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old) #<------------------------------------remove seed
             #gs = Game_Simulation(ppo.policy_old, current_policy, current_policy, current_policy)
 
-        # logging
-        if i_episode % log_interval == 0:
+            # logging
             print("Episode: "+str(i_episode) + " game simulation (ms) = "+str((t1-t0)/1000000) + " update (ms) = "+str((t3-t2)/1000000))
             gs.print_game(game_state) #<------------------------------------remove
-            ppo.writer.add_scalar('Games/weiter', game_count[0]/log_interval, i_episode)
-            ppo.writer.add_scalar('Games/sauspiel', game_count[1] / log_interval, i_episode)
-            ppo.writer.add_scalar('Games/wenz', game_count[2] / log_interval, i_episode)
-            ppo.writer.add_scalar('Games/solo', game_count[3] / log_interval, i_episode)
+            ppo.writer.add_scalar('Games/weiter', game_count[0]/update_timestep, i_episode)
+            ppo.writer.add_scalar('Games/sauspiel', game_count[1] / update_timestep, i_episode)
+            ppo.writer.add_scalar('Games/wenz', game_count[2] / update_timestep, i_episode)
+            ppo.writer.add_scalar('Games/solo', game_count[3] / update_timestep, i_episode)
 
             ppo.writer.add_scalar('WonGames/sauspiel', np.divide(won_game_count[1], game_count[1]), i_episode)
             ppo.writer.add_scalar('WonGames/wenz', np.divide(won_game_count[2],game_count[2]), i_episode)
@@ -289,10 +240,6 @@ def main():
             print("Evaluation")
             #evaluate(checkpoint_folder, model,   "eval.txt", 200)
 
-            #current_policy = ActorCriticNetwork()
-            #current_policy.to(device)
-            #current_policy.load_state_dict(ppo.policy_old.state_dict())
-            #evaluate_single(checkpoint_folder, "eval.txt", 400,random_policy)
 
 if __name__ == '__main__':
     main()

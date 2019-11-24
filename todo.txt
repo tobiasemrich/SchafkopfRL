@@ -1,13 +1,28 @@
-* include klopfen
-* include spritzen
+Missing Functions
+    * include klopfen
+    * include spritzen
+    * wann darf die Suchsau gespielt werden
+        * wenn gesucht ist
+        * wenn schon gesucht wurde
+        * beim letzten Stich
 
+Things I added that I don't like
+    * points add to rewards
+    * hard coded solos and wenz (really good cards)
 
-** warum brauchts 2 policies in ppo? eigentlich wird immer nur eine her genommen
+Questions
+    * warum brauchts 2 policies in ppo? eigentlich wird immer nur eine her genommen
 
-* evaluiere ein spiel states/actions ,...
-* verbesssere input state
-* overfitte auf ein spiel
+* Bug fixing
+    * evaluiere ein spiel states/actions ,...
+    * overfitte auf ein spiel
+
+* Input state enhancement
+    * current trick should be encoded with LSTM
 
 * performance
     * multiprocessing to parallelize played games
     * allow minibatches of collected trajectories => larger memories => more stable training
+
+* When nothing else works
+    * include MCTS

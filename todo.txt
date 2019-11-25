@@ -5,6 +5,8 @@ Missing Functions
         * wenn gesucht ist
         * wenn schon gesucht wurde
         * beim letzten Stich
+    * davonlaufen: werden die teams gesetzt?
+    * learning rate scheduler
 
 Things I added that I don't like
     * points add to rewards
@@ -21,8 +23,11 @@ Questions
     * current trick should be encoded with LSTM
 
 * performance
-    * multiprocessing to parallelize played games
-    * allow minibatches of collected trajectories => larger memories => more stable training
+    * multiprocessing to parallelize played games <-- seems to be problematic under windows
+
+* prettyfy
+    * change project structure
+    * add/rework comments
 
 * When nothing else works
     * include MCTS

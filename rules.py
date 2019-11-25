@@ -134,4 +134,7 @@ class Rules():
             allowed_cards = player_first_color_cards
           else:
             allowed_cards = player.cards.copy()
+      #TODO: remove rufsau if not gesucht and not davongelaufen and not last trick
+      #if rufsau in allowed_cards and not gesucht and not player.davongelaufen:
+
     return allowed_cards

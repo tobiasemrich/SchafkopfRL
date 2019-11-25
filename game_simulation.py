@@ -27,6 +27,10 @@ class Game_Simulation():
       np.random.seed(seed)
       random.seed(seed)
 
+    #some logging counts
+    self.game_count = [0, 0, 0, 0] #weiter, sauspiel, wenz, solo
+    self.won_game_count = [0, 0, 0, 0]
+
   def run_simulation(self):
     dealer = random.choice([0,1,2,3])
     game_state = Game_State(dealer)
@@ -66,6 +70,10 @@ class Game_Simulation():
     player_rewards = game_state.get_rewards()
     for p in range(4):
       self.players[p].retrieve_reward(player_rewards[p], game_state)
+
+    # update statistics just for logging purposes
+    self.update_statistics(game_state)
+
     return game_state
 
   def get_memory(self, ids=None):
@@ -128,6 +136,13 @@ class Game_Simulation():
     rewards = game_state.get_rewards()
     print("Rewards: " + str(rewards))
 
+  def update_statistics(self, game_state):
+    if game_state.game_type[1] == None:
+      self.game_count[0] += 1
+    else:
+      self.game_count[game_state.game_type[1] + 1] += 1
+      if game_state.get_rewards()[game_state.game_player] > 0:
+        self.won_game_count[game_state.game_type[1] + 1] += 1
 
 def main():
   all_rewards = np.array([0,0,0,0])

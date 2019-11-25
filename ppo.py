@@ -11,6 +11,8 @@ from torch.utils.tensorboard import SummaryWriter
 from experience_dataset import ExperienceDataset, custom_collate
 from game_simulation import Game_Simulation
 
+import multiprocessing as mp
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -110,7 +112,7 @@ class PPO:
         self.writer.add_scalar('Loss/entropy', avg_entropy / count, i_episode)
 
 def evaluate(checkpoint_folder, model_class, eval_file, runs):
-    generations = [int(f[:6]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
+    generations = [int(f[:8]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
     if len(generations) > 1:
         max_gen = max(generations)
         f = open(eval_file, "a+")
@@ -119,11 +121,11 @@ def evaluate(checkpoint_folder, model_class, eval_file, runs):
             if i != max_gen:
                 policy_old = model_class()
                 policy_old.to(device='cuda')
-                policy_old.load_state_dict(torch.load(checkpoint_folder + "/" + str(i).zfill(6) + ".pt"))
+                policy_old.load_state_dict(torch.load(checkpoint_folder + "/" + str(i).zfill(8) + ".pt"))
 
                 policy_new = model_class()
                 policy_new.to(device='cuda')
-                policy_new.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(6) + ".pt"))
+                policy_new.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(8) + ".pt"))
 
                 gs = Game_Simulation(policy_old, policy_new, policy_old, policy_new, 1)
                 all_rewards = np.array([0., 0., 0., 0.])
@@ -149,13 +151,14 @@ def evaluate(checkpoint_folder, model_class, eval_file, runs):
 def main():
 
     ############## Hyperparameters ##############
-    max_episodes = 900000  # max training episodes
+    max_episodes = 9000000  # max training episodes
 
     update_timestep = 2000  # update policy every n games
     evaluate_timestep = 10000 #save checkpoints every n games
     checkpoint_folder = "policies"
 
-    lr = 0.00001
+    lr = 0.000002
+    lr_schedule = {400000:0.0001, 800000:0.00001, 1200000:0.000002}
     betas = (0.9, 0.999)
     gamma = 0.99  # discount factor
     K_epochs = 8  # update policy for K epochs
@@ -177,21 +180,25 @@ def main():
     # take the newest generation available
     # file pattern = policy-000001.pt
     max_gen = 0
-    generations = [int(f[:6]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
+    generations = [int(f[:8]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
     if len(generations) > 0:
         max_gen = max(generations)
-        policy.load_state_dict(torch.load(checkpoint_folder+"/" + str(max_gen).zfill(6) + ".pt"))
+        policy.load_state_dict(torch.load(checkpoint_folder+"/" + str(max_gen).zfill(8) + ".pt"))
 
     #create ppo
     ppo = PPO(policy, lr, betas, gamma, K_epochs, eps_clip, batch_size, c1=c1, c2=c2)
 
-    #some logging counts
-    game_count = [0, 0, 0, 0] #weiter, sauspiel, wenz, solo
-    won_game_count = [0, 0, 0, 0]
+    #for i_episode in range(max_gen + 1, max_episodes + 1, update_timestep):
+    #    # multiprocess game simulations
+    #    cpu_count = mp.cpu_count()
+    #    pool = mp.Pool(cpu_count)
+    #    results = [pool.apply(run_n_games, args=(policy, update_timestep/cpu_count)) for _ in range(cpu_count)]
+    #    pool.close()
+
+
 
     #create a game simulation
     gs = Game_Simulation(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)  #<------------------------------------remove seed
-
 
     # training loop
     for i_episode in range(max_gen+1, max_episodes + 1):
@@ -201,45 +208,43 @@ def main():
         game_state = gs.run_simulation()
         t1 = time.time_ns()
 
-        if game_state.game_type[1] == None:
-            game_count[0] +=1
-        else:
-            game_count[game_state.game_type[1]+1] += 1
-            if game_state.get_rewards()[game_state.game_player] > 0:
-                won_game_count[game_state.game_type[1]+1]+=1
-
         # update if its time
         if i_episode % update_timestep == 0:
             t2 = time.time_ns()
             ppo.update(gs.get_memory(), i_episode)
             t3 = time.time_ns()
-           #print(gs.get_memory())
-            #reset memories and replace policy
-            gs = Game_Simulation(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old) #<------------------------------------remove seed
-            #gs = Game_Simulation(ppo.policy_old, current_policy, current_policy, current_policy)
 
             # logging
             print("Episode: "+str(i_episode) + " game simulation (ms) = "+str((t1-t0)/1000000) + " update (ms) = "+str((t3-t2)/1000000))
             gs.print_game(game_state) #<------------------------------------remove
-            ppo.writer.add_scalar('Games/weiter', game_count[0]/update_timestep, i_episode)
-            ppo.writer.add_scalar('Games/sauspiel', game_count[1] / update_timestep, i_episode)
-            ppo.writer.add_scalar('Games/wenz', game_count[2] / update_timestep, i_episode)
-            ppo.writer.add_scalar('Games/solo', game_count[3] / update_timestep, i_episode)
+            ppo.writer.add_scalar('Games/weiter', gs.game_count[0]/update_timestep, i_episode)
+            ppo.writer.add_scalar('Games/sauspiel', gs.game_count[1] / update_timestep, i_episode)
+            ppo.writer.add_scalar('Games/wenz', gs.game_count[2] / update_timestep, i_episode)
+            ppo.writer.add_scalar('Games/solo', gs.game_count[3] / update_timestep, i_episode)
 
-            ppo.writer.add_scalar('WonGames/sauspiel', np.divide(won_game_count[1], game_count[1]), i_episode)
-            ppo.writer.add_scalar('WonGames/wenz', np.divide(won_game_count[2],game_count[2]), i_episode)
-            ppo.writer.add_scalar('WonGames/solo', np.divide(won_game_count[3],game_count[3]), i_episode)
+            ppo.writer.add_scalar('WonGames/sauspiel', np.divide(gs.won_game_count[1], gs.game_count[1]), i_episode)
+            ppo.writer.add_scalar('WonGames/wenz', np.divide(gs.won_game_count[2],gs.game_count[2]), i_episode)
+            ppo.writer.add_scalar('WonGames/solo', np.divide(gs.won_game_count[3],gs.game_count[3]), i_episode)
 
-            game_count = [0, 0, 0, 0]  # weiter, sauspiel, wenz, solo
-            won_game_count = [0, 0, 0, 0]
+            # reset memories and replace policy
+            gs = Game_Simulation(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)
+
 
         # evaluation
         if i_episode % evaluate_timestep == 0:
             print("Saving Checkpoint")
-            torch.save(ppo.policy_old.state_dict(), checkpoint_folder + "/" + str(i_episode).zfill(6) + ".pt")
+            torch.save(ppo.policy_old.state_dict(), checkpoint_folder + "/" + str(i_episode).zfill(8) + ".pt")
             print("Evaluation")
             #evaluate(checkpoint_folder, model,   "eval.txt", 200)
 
+
+def run_n_games(policy, number):
+    policy_copy = type(policy)().to(torch.device("cpu"))
+    policy_copy.load_state_dict(policy.state_dict())
+    gs = Game_Simulation(policy_copy, policy_copy, policy_copy, policy_copy)
+    for i_episode in range(0, number):
+        game_state = gs.run_simulation()
+    return gs, game_state
 
 if __name__ == '__main__':
     main()

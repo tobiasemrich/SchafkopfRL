@@ -63,6 +63,7 @@ class Game_State():
         for player_id in range(4):
           if self.course_of_game_playerwise[trick][player_id] == [self.game_type[0], 7]:
             player_team.append(player_id)
+    #TODO: add davonlaufen (since this function is also used during a game to check if the teams are already known)
 
     return player_team
 

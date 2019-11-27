@@ -32,7 +32,7 @@ class PPO:
 
         self.policy = policy
         self.optimizer = torch.optim.Adam(self.policy.parameters(),
-                                          lr=self.lr, betas=betas, weight_decay=1e-4)
+                                          lr=self.lr, betas=betas, weight_decay=1e-5)
         self.lr_scheduler = StepLR(self.optimizer, step_size=self.lr_stepsize, gamma=self.lr_gamma)
         self.policy_old = type(policy)().to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
@@ -113,14 +113,12 @@ class PPO:
         self.writer.add_scalar('Loss/entropy', avg_entropy / count, i_episode)
         self.writer.add_scalar('Loss/learning_rate', self.lr_scheduler.get_lr()[0], i_episode)
 
-def evaluate(checkpoint_folder, model_class, eval_file, runs):
+def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpoint, runs, summary_writer):
     generations = [int(f[:8]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
     if len(generations) > 1:
         max_gen = max(generations)
-        f = open(eval_file, "a+")
-        f.write(str(max_gen) + ", ")
         for i in generations:
-            if i != max_gen:
+            if i != max_gen and i%every_n_checkpoint==0:
                 policy_old = model_class()
                 policy_old.to(device=device)
                 policy_old.load_state_dict(torch.load(checkpoint_folder + "/" + str(i).zfill(8) + ".pt"))
@@ -146,9 +144,8 @@ def evaluate(checkpoint_folder, model_class, eval_file, runs):
 
 
                 print(str(max_gen) + " vs " + str(i) + " = "+ str(all_rewards[0] + all_rewards[2]) + ":"+ str(all_rewards[1] + all_rewards[3]) +"\n")
-                f.write(str(all_rewards[0] + all_rewards[2]) + ", ")
-        f.write("\n")
-        f.close
+                summary_writer.add_scalar('Evaluation/generation_'+str(max_gen), all_rewards[0] + all_rewards[2], i)
+
 
 def main():
 
@@ -156,7 +153,9 @@ def main():
     max_episodes = 9000000  # max training episodes
 
     update_timestep = 2000  # update policy every n games
-    evaluate_timestep = 10000 #save checkpoints every n games
+    save_checkpoint_every_n = 10000 #save checkpoints every n games
+    evaluate_timestep = 50000 #needs to be a multiple of save_checkpoint_every_n
+    eval_games = 200
     checkpoint_folder = "policies"
 
     lr = 0.0001
@@ -227,11 +226,12 @@ def main():
 
 
         # evaluation
-        if i_episode % evaluate_timestep == 0:
+        if i_episode % save_checkpoint_every_n == 0:
             print("Saving Checkpoint")
             torch.save(ppo.policy_old.state_dict(), checkpoint_folder + "/" + str(i_episode).zfill(8) + ".pt")
             print("Evaluation")
-            #evaluate(checkpoint_folder, model,   "eval.txt", 200)
+            if i_episode % evaluate_timestep == 0:
+                play_against_old_checkpoints(checkpoint_folder, model,evaluate_timestep,eval_games,ppo.writer)
 
 
 if __name__ == '__main__':

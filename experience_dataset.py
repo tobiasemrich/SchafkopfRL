@@ -32,15 +32,16 @@ def custom_collate(batch):
     transposed_states = list(map(list, zip(*states_batch)))
     states.append(torch.stack(transposed_states[0]).detach())
 
-    sequences = [torch.squeeze(seq[0], dim=1).detach() for seq in transposed_states[1]]
-    seq_lengths = [len(x) for x in sequences]
-    # pad the seq_batch
-    padded_seq_batch = torch.nn.utils.rnn.pad_sequence(sequences)
-    # pack the padded_seq_batch
-    packed_seq_batch = torch.nn.utils.rnn.pack_padded_sequence(padded_seq_batch, lengths=seq_lengths,
-                                                               enforce_sorted=False)
+    for i in range(2):
+        sequences = [torch.squeeze(seq[0], dim=1).detach() for seq in transposed_states[1+i]]
+        seq_lengths = [len(x) for x in sequences]
+        # pad the seq_batch
+        padded_seq_batch = torch.nn.utils.rnn.pad_sequence(sequences)
+        # pack the padded_seq_batch
+        packed_seq_batch = torch.nn.utils.rnn.pack_padded_sequence(padded_seq_batch, lengths=seq_lengths,
+                                                                   enforce_sorted=False)
 
-    states.append(packed_seq_batch)
+        states.append(packed_seq_batch)
 
     actions = torch.stack(actions_batch).detach()
     allowed_actions = torch.stack(allowed_actions_batch).detach()

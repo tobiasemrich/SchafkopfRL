@@ -31,10 +31,10 @@ class Player():
     #self.print_action_probs(action_probs.tolist())
     action = dist.sample()
 
-    self.memory.states.append(state)
-    self.memory.allowed_actions.append(allowed_actions)
+    self.memory.states.append([s.detach() for s in state])
+    self.memory.allowed_actions.append(allowed_actions.detach())
     self.memory.actions.append(action)
-    self.memory.logprobs.append(dist.log_prob(action))
+    self.memory.logprobs.append(dist.log_prob(action).detach())
 
     return action.item()
 
@@ -67,7 +67,7 @@ class Player():
 
     action = self.act(
       self.policy.preprocess(game_state, self),
-      torch.tensor(np.append(one_hot_games(allowed_games), np.zeros(32))).float().to(device='cuda'))
+      torch.tensor(np.append(one_hot_games(allowed_games), np.zeros(32))).float())
 
     selected_game = self.rules.games[action]
 
@@ -85,7 +85,7 @@ class Player():
   def select_card(self, game_state):
     action = self.act(
       self.policy.preprocess(game_state, self),
-      torch.tensor(np.append(np.zeros(9), one_hot_cards(self.rules.allowed_cards(game_state, self)))).float().to(device='cuda'))
+      torch.tensor(np.append(np.zeros(9), one_hot_cards(self.rules.allowed_cards(game_state, self)))).float())
 
     selected_card = self.rules.cards[action - 9]
 

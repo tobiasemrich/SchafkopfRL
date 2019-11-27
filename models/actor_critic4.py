@@ -4,19 +4,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.distributions import Categorical
+
 from utils import two_hot_encode_game, one_hot_cards
 from utils import two_hot_encode_card
 
 '''
 The network should have the following form
 
-input: 1045 (state size) + 32 (remaining cards of player) + 4 player id
-hidden layer: 1028
+input: 59 (game info) + 16*x (lstm of game history) + 16*x (lstm of current trick)
+linear layer: 256     + 256                         + 256        
 relu
-##hidden layer: 1028
-##relu
-hidden layer: 512   + hidden layer: 512
-relu                + relu
+linear layer: 256       
+relu
+linear layer: 256   +  256
+relu  + relu
 action layer: (9[games]+32[cards])    + value layer: 1
 softmax layer
 
@@ -40,13 +41,17 @@ class ActorCriticNetwork4(nn.Module):
         self.fc4a = nn.Linear(self.hidden_neurons, 41)
         self.fc4b = nn.Linear(self.hidden_neurons, 1)
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
     def forward(self, state_vector, allowed_actions):
         [info_vector, course_of_game, current_trick] = state_vector
+        allowed_actions = allowed_actions.to(device=self.device)
 
 
-        output, ([h1_,h2_], [c1_,c2_]) = self.lstm(course_of_game)
+        output, ([h1_,h2_], [c1_,c2_]) = self.lstm_course_of_game(course_of_game)
 
-        output, ([h3_, h4_], [c3_, c4_]) = self.lstm(current_trick)
+        output, ([h3_, h4_], [c3_, c4_]) = self.lstm_current_trick(current_trick)
 
 
         x = F.relu(self.fc1(info_vector))
@@ -70,10 +75,6 @@ class ActorCriticNetwork4(nn.Module):
         dist_entropy = dist.entropy()
 
         return action_logprobs, torch.squeeze(state_value), dist_entropy
-
-    def init_hidden(self, batch_size):
-        # variable of size [num_layers*num_directions, b_sz, hidden_sz]
-        return Variable(torch.zeros(self.num_directions, batch_size, self.hidden_size)).cuda()
 
     def preprocess(self, game_state, player):
         """
@@ -140,10 +141,10 @@ class ActorCriticNetwork4(nn.Module):
 
         #return torch.tensor(info_vector).float().to(device='cuda')
         #return [torch.tensor(info_vector).float().to(device='cuda'), course_of_game_enc]
-        course_of_game_enc = torch.tensor(course_of_game_enc).float().to(device='cuda')
+        course_of_game_enc = torch.tensor(course_of_game_enc).float().to(device=self.device)
         course_of_game_enc = course_of_game_enc.view(len(course_of_game_enc),1,  16)
 
-        current_trick_enc = torch.tensor(current_trick_enc).float().to(device='cuda')
+        current_trick_enc = torch.tensor(current_trick_enc).float().to(device=self.device)
         current_trick_enc = current_trick_enc.view(len(current_trick_enc), 1, 16)
 
-        return [torch.tensor(info_vector).float().to(device='cuda'), course_of_game_enc, current_trick_enc]
+        return [torch.tensor(info_vector).float().to(device=self.device), course_of_game_enc, current_trick_enc]

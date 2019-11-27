@@ -6,7 +6,7 @@ Missing Functions
         * wenn schon gesucht wurde
         * beim letzten Stich
     * davonlaufen: werden die teams gesetzt?
-    * learning rate scheduler
+    + learning rate scheduler
 
 Things I added that I don't like
     * points add to rewards
@@ -20,10 +20,10 @@ Questions
     * overfitte auf ein spiel
 
 * Input state enhancement
-    * current trick should be encoded with LSTM
+    + current trick should be encoded with LSTM
 
 * performance
-    * multiprocessing to parallelize played games <-- seems to be problematic under windows
+    + multiprocessing to parallelize played games ---> only possible on CPU thus no performance gain
 
 * prettyfy
     * change project structure
@@ -31,3 +31,7 @@ Questions
 
 * When nothing else works
     * include MCTS
+    * check out CFR
+
+* MISC
+    * hard code more wenz

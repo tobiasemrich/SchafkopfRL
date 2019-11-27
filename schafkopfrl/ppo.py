@@ -9,12 +9,10 @@ from torch.optim.lr_scheduler import  StepLR
 from torch.utils import data
 from torch.utils.tensorboard import SummaryWriter
 
-from experience_dataset import ExperienceDataset, custom_collate
-from game_simulation import Game_Simulation
+from schafkopfrl.experience_dataset import ExperienceDataset, custom_collate
+from schafkopfrl.game_simulation import Game_Simulation
 
-import multiprocessing as mp
-
-from models.actor_critic4 import ActorCriticNetwork4
+from schafkopfrl.models.actor_critic4 import ActorCriticNetwork4
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -124,11 +122,11 @@ def evaluate(checkpoint_folder, model_class, eval_file, runs):
         for i in generations:
             if i != max_gen:
                 policy_old = model_class()
-                policy_old.to(device=update_device)
+                policy_old.to(device=device)
                 policy_old.load_state_dict(torch.load(checkpoint_folder + "/" + str(i).zfill(8) + ".pt"))
 
                 policy_new = model_class()
-                policy_new.to(device=update_device)
+                policy_new.to(device=device)
                 policy_new.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(8) + ".pt"))
 
                 gs = Game_Simulation(policy_old, policy_new, policy_old, policy_new, 1)

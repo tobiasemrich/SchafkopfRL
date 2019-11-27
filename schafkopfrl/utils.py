@@ -1,5 +1,5 @@
 import numpy as np
-from rules import Rules
+from schafkopfrl.rules import Rules
 
 
 '''

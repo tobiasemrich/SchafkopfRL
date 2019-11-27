@@ -3,13 +3,10 @@ from os import listdir
 
 import torch
 
-from models.actor_critic import ActorCriticNetwork
-from game_state import Game_State
-from memory import Memory
-from models.actor_critic2 import ActorCriticNetwork2
-from models.actor_critic3 import ActorCriticNetwork3
-from player import Player
-from rules import Rules
+from schafkopfrl.game_state import Game_State
+from schafkopfrl.memory import Memory
+from schafkopfrl.player import Player
+from schafkopfrl.rules import Rules
 import numpy as np
 
 

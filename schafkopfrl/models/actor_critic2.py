@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-from utils import one_hot_cards
+from schafkopfrl.utils import one_hot_cards
 
 '''
 The network should have the following form

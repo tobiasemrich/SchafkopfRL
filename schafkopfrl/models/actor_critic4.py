@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
-from utils import two_hot_encode_game, one_hot_cards
-from utils import two_hot_encode_card
+from schafkopfrl.utils import two_hot_encode_game, one_hot_cards
+from schafkopfrl.utils import two_hot_encode_card
 
 '''
 The network should have the following form

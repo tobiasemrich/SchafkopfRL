@@ -1,6 +1,6 @@
 # contains information about the game that is known by all players
 import numpy as np
-from rules import Rules
+from schafkopfrl.rules import Rules
 
 class Game_State():
   def __init__(self, dealer):

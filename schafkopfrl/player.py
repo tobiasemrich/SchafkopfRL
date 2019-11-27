@@ -52,16 +52,17 @@ class Player():
         break;
 
     wenz_count = len([card for card in [[0, 3], [1, 3], [2, 3], [3, 3]] if card in self.cards])
+    spazen_count = 0
     if wenz_count >= 2:
       for color in range(4):
-        for number in range(7, -1, -1):
-          if [color, number] in self.cards:
-            wenz_count += 1
-          elif number == 3:
+        if [color, 7] in self.cards:
+          continue
+        for number in range(7):
+          if number == 3:
             continue
-          else:
-            break
-      if wenz_count >= 7:
+          if [color, number] in self.cards:
+            spazen_count += 1
+      if spazen_count < 2:
         allowed_games = [[None, 1]]
 
 

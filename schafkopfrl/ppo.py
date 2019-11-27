@@ -13,6 +13,7 @@ from schafkopfrl.experience_dataset import ExperienceDataset, custom_collate
 from schafkopfrl.game_simulation import Game_Simulation
 
 from schafkopfrl.models.actor_critic4 import ActorCriticNetwork4
+from schafkopfrl.models.actor_critic5 import ActorCriticNetwork5
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -171,7 +172,7 @@ def main():
     random_seed = None
     #############################################
 
-    model = ActorCriticNetwork4
+    model = ActorCriticNetwork5
 
     # creating environment
     if random_seed:

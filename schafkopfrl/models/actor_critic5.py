@@ -58,7 +58,9 @@ class ActorCriticNetwork5(nn.Module):
 
         x = F.relu(self.fc1(info_vector))
         x = torch.cat((x, torch.squeeze(h2_), torch.squeeze(h4_)), -1)
-        x = F.relu(self.fc2_bn(self.fc2(x)))
+        x = self.fc2(x)
+        x = x.view(-1, self.hidden_neurons)
+        x = F.relu(self.fc2_bn(x))
         x = F.relu(self.fc2_2_bn(self.fc2_2(x)))
         ax = F.relu(self.fc3a_bn(self.fc3a(x)))
         bx = F.relu(self.fc3b_bn(self.fc3b(x)))

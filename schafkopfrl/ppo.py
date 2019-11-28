@@ -10,7 +10,7 @@ from torch.utils import data
 from torch.utils.tensorboard import SummaryWriter
 
 from schafkopfrl.experience_dataset import ExperienceDataset, custom_collate
-from schafkopfrl.game_simulation import Game_Simulation
+from schafkopfrl.schafkopf_game import SchafkopfGame
 
 from schafkopfrl.models.actor_critic4 import ActorCriticNetwork4
 from schafkopfrl.models.actor_critic5 import ActorCriticNetwork5
@@ -18,7 +18,7 @@ from schafkopfrl.models.actor_critic5 import ActorCriticNetwork5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PPO:
-    def __init__(self, policy, lr_params, betas, gamma, K_epochs, eps_clip, batch_size, c1=0.5, c2=0.01):
+    def __init__(self, policy, lr_params, betas, gamma, K_epochs, eps_clip, batch_size, c1=0.5, c2=0.01, start_episode = -1):
         [self.lr, self.lr_stepsize, self.lr_gamma] = lr_params
 
         self.betas = betas
@@ -34,7 +34,7 @@ class PPO:
         self.policy = policy
         self.optimizer = torch.optim.Adam(self.policy.parameters(),
                                           lr=self.lr, betas=betas, weight_decay=1e-5)
-        self.lr_scheduler = StepLR(self.optimizer, step_size=self.lr_stepsize, gamma=self.lr_gamma)
+        self.lr_scheduler = StepLR(self.optimizer, step_size=self.lr_stepsize, gamma=self.lr_gamma, last_epoch=start_episode)
         self.policy_old = type(policy)().to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
@@ -128,17 +128,17 @@ def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpo
                 policy_new.to(device=device)
                 policy_new.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(8) + ".pt"))
 
-                gs = Game_Simulation(policy_old, policy_new, policy_old, policy_new, 1)
+                gs = SchafkopfGame(policy_old, policy_new, policy_old, policy_new, 1)
                 all_rewards = np.array([0., 0., 0., 0.])
                 for j in range(runs):
-                    game_state = gs.run_simulation()
+                    game_state = gs.play_one_game()
                     rewards = np.array(game_state.get_rewards())
                     all_rewards += rewards
 
-                gs = Game_Simulation(policy_new, policy_old, policy_new, policy_old, 1)
+                gs = SchafkopfGame(policy_new, policy_old, policy_new, policy_old, 1)
                 all_rewards = all_rewards[[1, 0, 3, 2]]
                 for j in range(runs):
-                    game_state = gs.run_simulation()
+                    game_state = gs.play_one_game()
                     #gs.print_game(game_state)
                     rewards = np.array(game_state.get_rewards())
                     all_rewards += rewards
@@ -172,7 +172,7 @@ def main():
     random_seed = None
     #############################################
 
-    model = ActorCriticNetwork5
+    model = ActorCriticNetwork4
 
     # creating environment
     if random_seed:
@@ -189,24 +189,24 @@ def main():
         policy.load_state_dict(torch.load(checkpoint_folder+"/" + str(max_gen).zfill(8) + ".pt"))
 
     #create ppo
-    ppo = PPO(policy, [lr, lr_stepsize, lr_gamma], betas, gamma, K_epochs, eps_clip, batch_size, c1=c1, c2=c2)
+    ppo = PPO(policy, [lr, lr_stepsize, lr_gamma], betas, gamma, K_epochs, eps_clip, batch_size, c1=c1, c2=c2, start_episode=max_gen-1  )
 
     #create a game simulation
-    gs = Game_Simulation(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)  #<------------------------------------remove seed
+    gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)  #<------------------------------------remove seed
 
     # training loop
     for i_episode in range(max_gen+1, max_episodes + 1):
 
         # Running policy_old:
         t0 = time.time_ns()
-        game_state = gs.run_simulation()
+        game_state = gs.play_one_game()
         t1 = time.time_ns()
 
 
         # update if its time
         if i_episode % update_timestep == 0:
             t2 = time.time_ns()
-            ppo.update(gs.get_memory(), i_episode)
+            ppo.update(gs.get_player_memories(), i_episode)
             t3 = time.time_ns()
             ppo.lr_scheduler.step(i_episode)
 
@@ -223,7 +223,7 @@ def main():
             ppo.writer.add_scalar('WonGames/solo', np.divide(gs.won_game_count[3],gs.game_count[3]), i_episode)
 
             # reset memories and replace policy
-            gs = Game_Simulation(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)
+            gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)
 
 
         # evaluation

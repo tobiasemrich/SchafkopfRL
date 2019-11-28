@@ -26,7 +26,7 @@ class ActorCriticNetwork4(nn.Module):
     def __init__(self):
         super(ActorCriticNetwork4, self).__init__()
 
-        self.hidden_neurons = 256
+        self.hidden_neurons = 1024
 
         self.lstm_course_of_game = nn.LSTM(16, self.hidden_neurons, num_layers=2)  # Input dim is 16, output dim is hidden_neurons
         self.lstm_current_trick = nn.LSTM(16, self.hidden_neurons, num_layers=2)  # Input dim is 16, output dim is hidden_neurons

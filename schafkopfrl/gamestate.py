@@ -4,6 +4,9 @@ from schafkopfrl.rules import Rules
 
 
 class GameState:
+    """
+    The GameState contains all public visible game information like dealer, game_type, game_player, course_of_game, current_scores ...
+    """
     def __init__(self, dealer):
 
         self.rules = Rules()
@@ -29,9 +32,13 @@ class GameState:
 
         self.scores = [0, 0, 0, 0]
 
-    def player_plays_card(self, player_id, card):
+        #for debugging purposes remember probs for picking an action
+        self.action_probabilities=[[[None, None] for x in range(4)] for y in range(9)]
+
+    def player_plays_card(self, player_id, card, prob):
         self.course_of_game_playerwise[self.trick_number][player_id] = card
         self.course_of_game[self.trick_number][self.played_cards % 4] = card
+        self.action_probabilities[self.trick_number+1][player_id] = prob
         self.played_cards += 1
 
         if self.played_cards % 4 == 0:  # trick complete

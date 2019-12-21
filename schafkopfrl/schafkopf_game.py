@@ -6,6 +6,7 @@ import torch
 from schafkopfrl.gamestate import GameState
 from schafkopfrl.memory import Memory
 from schafkopfrl.models.actor_critic4 import ActorCriticNetwork4
+from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
 from schafkopfrl.player import Player
 from schafkopfrl.rules import Rules
 import numpy as np
@@ -26,8 +27,7 @@ class SchafkopfGame:
         self.players = [Player(0, policy1), Player(1, policy2), Player(2, policy3), Player(3, policy4)]
         self.rules = Rules()
         if seed != None:
-            np.random.seed(seed)
-            random.seed(seed)
+            self.setSeed(seed)
 
         # some logging counts
         self.game_count = [0, 0, 0, 0]  # weiter, sauspiel, wenz, solo
@@ -58,8 +58,9 @@ class SchafkopfGame:
         for p in range(4):
             current_player_id = (game_state.first_player + p) % 4
             current_player = self.players[current_player_id]
-            game_type = current_player.call_game_type(game_state)
+            game_type, prob = current_player.call_game_type(game_state)
             game_state.bidding_round[current_player_id] = game_type
+            game_state.action_probabilities[0][current_player_id] = prob
             if current_highest_game[1] == None or (not game_type[1] == None and game_type[1] > current_highest_game[1]):
                 current_highest_game = game_type
                 game_player = current_player_id
@@ -74,8 +75,8 @@ class SchafkopfGame:
                 for p in range(4):
                     current_player_id = (first_player_of_trick + p) % 4
                     current_player = self.players[current_player_id]
-                    card = current_player.select_card(game_state)
-                    game_state.player_plays_card(current_player_id, card)
+                    card, prob = current_player.select_card(game_state)
+                    game_state.player_plays_card(current_player_id, card, prob)
                 first_player_of_trick = game_state.trick_owner[trick_number]
 
         # determine winner(s) and rewards
@@ -87,6 +88,11 @@ class SchafkopfGame:
         self.update_statistics(game_state)
 
         return game_state
+
+    def setSeed(self, seed):
+        np.random.seed(seed)
+        random.seed(seed)
+        self.rules = Rules()
 
     def get_player_memories(self, ids=None):
         """
@@ -116,6 +122,7 @@ class SchafkopfGame:
                 br += self.rules.game_names[game_state.bidding_round[i][1]] + " "
             else:
                 br += "weiter! "
+            br += "[{:0.3f}]  ".format(game_state.action_probabilities[0][i])
         print(br + "\n")
 
         played_game_str = "Played Game: "
@@ -147,12 +154,13 @@ class SchafkopfGame:
                     trick_str_ += self.rules.card_color[game_state.course_of_game_playerwise[trick][player][0]] + " " + \
                                   self.rules.card_number[game_state.course_of_game_playerwise[trick][player][1]]
 
+                    trick_str_ += "[{:0.3f}]".format(game_state.action_probabilities[trick+1][player])
                     if game_state.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
                             game_state.game_type):
                         trick_str_ += '\033[0m'
-                        trick_str += trick_str_.ljust(34)
+                        trick_str += trick_str_.ljust(39)
                     else:
-                        trick_str += trick_str_.ljust(25)
+                        trick_str += trick_str_.ljust(30)
                 print(trick_str)
 
             print("\nScores: " + str(game_state.scores) + "\n")
@@ -171,22 +179,22 @@ class SchafkopfGame:
 def main():
     all_rewards = np.array([0, 0, 0, 0])
 
-    policy = ActorCriticNetwork4()
+    policy = ActorCriticNetwork6_ego()
     # take the newest generation available
     # file pattern = policy-000001.pt
-    generations = [int(f[0:6]) for f in listdir("policies") if f.endswith(".pt")]
+    generations = [int(f[:8]) for f in listdir("../policies") if f.endswith(".pt")]
     if len(generations) > 0:
         max_gen = max(generations)
-        policy.load_state_dict(torch.load("policies/" + str(max_gen).zfill(6) + ".pt"))
+        policy.load_state_dict(torch.load("../policies/" + str(max_gen).zfill(8) + ".pt"))
 
     # policy.eval()
     policy.to(device='cuda')
 
-    gs = SchafkopfGame(policy, policy, policy, policy, 0)
+    gs = SchafkopfGame(policy, policy, policy, policy, 1)
 
-    for i in range(10):
+    for i in range(2):
         print("playing game " + str(i))
-
+        gs = SchafkopfGame(policy, policy, policy, policy, 1) #<--------remove this
         game_state = gs.play_one_game()
         rewards = np.array(game_state.get_rewards())
         all_rewards += rewards

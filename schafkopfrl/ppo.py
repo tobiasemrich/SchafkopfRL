@@ -10,8 +10,10 @@ from torch.utils import data
 from torch.utils.tensorboard import SummaryWriter
 
 from schafkopfrl.experience_dataset import ExperienceDataset, custom_collate
+from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
 from schafkopfrl.schafkopf_game import SchafkopfGame
 
+from tensorboard import program
 from schafkopfrl.models.actor_critic4 import ActorCriticNetwork4
 from schafkopfrl.models.actor_critic5 import ActorCriticNetwork5
 
@@ -34,7 +36,8 @@ class PPO:
         self.policy = policy
         self.optimizer = torch.optim.Adam(self.policy.parameters(),
                                           lr=self.lr, betas=betas, weight_decay=1e-5)
-        self.lr_scheduler = StepLR(self.optimizer, step_size=self.lr_stepsize, gamma=self.lr_gamma, last_epoch=start_episode)
+        self.lr_scheduler = StepLR(self.optimizer, step_size=self.lr_stepsize, gamma=self.lr_gamma)
+        self.lr_scheduler.step(start_episode)
         self.policy_old = type(policy)().to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
@@ -68,7 +71,7 @@ class PPO:
 
         # Create dataset from collected experiences
         experience_dataset = ExperienceDataset(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
-        training_generator = data.DataLoader(experience_dataset, collate_fn=custom_collate, batch_size=self.batch_size)
+        training_generator = data.DataLoader(experience_dataset, collate_fn=custom_collate, batch_size=self.batch_size, shuffle=True)
 
 
         # Optimize policy for K epochs:
@@ -153,26 +156,31 @@ def main():
     ############## Hyperparameters ##############
     max_episodes = 9000000  # max training episodes
 
-    update_timestep = 2000  # update policy every n games
-    save_checkpoint_every_n = 10000 #save checkpoints every n games
+    update_timestep = 5000 #5000  # update policy every n games
+    save_checkpoint_every_n = 10000 #10000 save checkpoints every n games
     evaluate_timestep = 50000 #needs to be a multiple of save_checkpoint_every_n
-    eval_games = 200
+    eval_games = 500
     checkpoint_folder = "policies"
 
     lr = 0.0001
-    lr_stepsize = 200000
-    lr_gamma = 0.1
+    lr_stepsize = 200000 #300000
+    lr_gamma = 0.3
 
     betas = (0.9, 0.999)
     gamma = 0.99  # discount factor
-    K_epochs = 8  # update policy for K epochs
+    K_epochs = 8 #8  # update policy for K epochs
     eps_clip = 0.2  # clip parameter for PPO
-    c1, c2 = 0.5, 0.05
-    batch_size = 400
-    random_seed = None
+    c1, c2 = 0.5, 0.001#0.001
+    batch_size = 5000 #5000
+    random_seed = None #<---------------------------------------------------------------- set to None
     #############################################
 
-    model = ActorCriticNetwork4
+    model = ActorCriticNetwork6_ego
+
+    #start tensorboard
+    tb = program.TensorBoard()
+    tb.configure(argv=[None, '--logdir', "runs"])
+    tb.launch()
 
     # creating environment
     if random_seed:
@@ -192,23 +200,26 @@ def main():
     ppo = PPO(policy, [lr, lr_stepsize, lr_gamma], betas, gamma, K_epochs, eps_clip, batch_size, c1=c1, c2=c2, start_episode=max_gen-1  )
 
     #create a game simulation
-    gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)  #<------------------------------------remove seed
+    gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old, random_seed)
 
     # training loop
     for i_episode in range(max_gen+1, max_episodes + 1):
+
+        #gs.setSeed(random_seed)  # <------------------------------------remove this
 
         # Running policy_old:
         t0 = time.time_ns()
         game_state = gs.play_one_game()
         t1 = time.time_ns()
 
-
         # update if its time
         if i_episode % update_timestep == 0:
+            print("Update")
             t2 = time.time_ns()
             ppo.update(gs.get_player_memories(), i_episode)
             t3 = time.time_ns()
             ppo.lr_scheduler.step(i_episode)
+
 
             # logging
             print("Episode: "+str(i_episode) + " game simulation (ms) = "+str((t1-t0)/1000000) + " update (ms) = "+str((t3-t2)/1000000))
@@ -223,15 +234,16 @@ def main():
             ppo.writer.add_scalar('WonGames/solo', np.divide(gs.won_game_count[3],gs.game_count[3]), i_episode)
 
             # reset memories and replace policy
-            gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old)
+            gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old, random_seed)
 
 
         # evaluation
         if i_episode % save_checkpoint_every_n == 0:
             print("Saving Checkpoint")
             torch.save(ppo.policy_old.state_dict(), checkpoint_folder + "/" + str(i_episode).zfill(8) + ".pt")
-            print("Evaluation")
+
             if i_episode % evaluate_timestep == 0:
+                print("Evaluation")
                 play_against_old_checkpoints(checkpoint_folder, model,evaluate_timestep,eval_games,ppo.writer)
 
 

@@ -46,7 +46,7 @@ class ActorCriticNetwork6_ego(nn.Module):
 
     def forward(self, state_vector, allowed_actions):
         [info_vector, course_of_game, current_trick] = state_vector
-        allowed_actions = allowed_actions.to(device=self.device)
+        allowed_actions = allowed_actions.to(device=self.device).detach()
 
 
         output, ([h1_,h2_], [c1_,c2_]) = self.lstm_course_of_game(course_of_game)
@@ -61,10 +61,35 @@ class ActorCriticNetwork6_ego(nn.Module):
         bx = F.relu(self.fc3b(x))
         ax = self.fc4a(ax)
         bx = self.fc4b(bx)
-        ax = F.softmax(ax)
-        ax = torch.mul(ax, allowed_actions)
-        ax /= torch.sum(ax)
+        #print(ax.tolist())
 
+        ax = ax.masked_fill(allowed_actions == 0, -1e9)
+
+        ax = F.softmax(ax, dim=-1)
+        #ax = ax+1e-35 # to avoid zero probabilities
+        #ax = F.log_softmax(ax, dim=-1)
+        #print(ax.tolist())
+        #print(allowed_actions.tolist())
+
+        #ax = torch.mul(ax, allowed_actions)
+
+        #eps = 1e-30
+        #epsilon = torch.Tensor(ax.shape).fill_(eps).to(device=self.device).detach()
+        #ax = torch.where(((allowed_actions == 1) & (ax < eps)), epsilon, ax)
+
+        #ax=ax[allowed_actions==1]+1e-45
+        #ax = (allowed_actions + 1e-45).log()
+        #print(ax.tolist())
+
+        #ax /= torch.sum(ax)
+
+        # due to over/underflow the prob of a possible action might become 0. To avoid this I add eps
+        #eps = 1e-30
+        #epsilon = torch.Tensor(ax.shape).fill_(eps).to(device=self.device).detach()
+
+        #ax = torch.where(((allowed_actions == 1) & (ax < eps)), epsilon, ax)
+
+        #print(ax.tolist())
         return ax, bx
 
     def evaluate(self, state_vector, allowed_actions, action):
@@ -106,12 +131,13 @@ class ActorCriticNetwork6_ego(nn.Module):
         first_player_enc[(game_state.first_player-ego_player)%4] = 1
 
         team_encoding = np.zeros(4)
-        player_team = [(t-ego_player)%4 for t in game_state.get_player_team()]
+        if game_state.get_player_team() != [None]:
+            player_team = [(t-ego_player)%4 for t in game_state.get_player_team()]
 
-        if game_state.game_type[1] != 0 and len(player_team) == 1 and player_team != [None]:
-            team_encoding[player_team] = 1
-        elif game_state.game_type[1] == 0 and len(player_team) == 2:
-            team_encoding[player_team] = 1
+            if game_state.game_type[1] != 0 and len(player_team) == 1:
+                team_encoding[player_team] = 1
+            elif game_state.game_type[1] == 0 and len(player_team) == 2:
+                team_encoding[player_team] = 1
 
         #course of game
         #course_of_game_enc = [torch.zeros(16).float().to(device='cuda')]

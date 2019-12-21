@@ -17,16 +17,18 @@ Questions
 
 * Bug fixing
     * evaluiere ein spiel states/actions ,...
-    * overfitte auf ein spiel
+    + overfitte auf ein spiel
+
 
 * Input state enhancement
     + current trick should be encoded with LSTM
 
 * performance
     + multiprocessing to parallelize played games ---> only possible on CPU thus no performance gain
+    - play-n_games implement
 
 * prettyfy
-    * change project structure
+    + change project structure
     * add/rework comments
 
 * When nothing else works
@@ -34,4 +36,11 @@ Questions
     * check out CFR
 
 * MISC
-    * hard code more wenz
+    + hard code more wenz ----> did that
+    * player_plays_card: add probability of playing that card and show it in print game
+    * loss shown in tensorboard is dependent on learning rate currently, this should be changed
+    * add batchnorm (faster training?)
+
+* new metrics to see that the learner makes progress
+    * number of times a player plays a lower card than is played although he could take the trick
+    * play against a rule based bot

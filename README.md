@@ -23,7 +23,6 @@ The <b>state space </b> consists of three parts (necessary bits in brackets):
   - game_player (4)
   - first_player (4)
   - current_scores (4) [divided by 120 for normalization purpose]
-  - ego_player_id (4)
   - remaining cards (32) [one hot encoded]
   - teams (4) [bits of players are set to 1, if Suchsau has been played already]
 - game_history_sequence (x * 16)
@@ -31,12 +30,14 @@ The <b>state space </b> consists of three parts (necessary bits in brackets):
 - current_trick_sequence (y * 16)
     - current_trick: y * (12 + 4) each played card in order plus the player that played it
 
+other players are encoded by position with respect to ego_player
 The <b>action space</b> is a 41d vector that contains
 
 - game type selection (9)
 - card selection (32)
 
 ### Policy Network
+<img src="documentation/network.jpg">
 
 ## Resources
 - PPO Paper: https://arxiv.org/abs/1707.06347

@@ -10,9 +10,31 @@ There are a lot of different variations (allowed game types, allowed doubling me
 ## Documentation
 
 ### Class Overview
+Find the most imporatant classes for the training process below.
+
 <img src="documentation/class_diagram.jpg">
 
-### Action Space
+### State and Action Space
+
+The <b>state space </b> consists of three parts (necessary bits in brackets):
+
+- info_vector (59)
+  - game_type (7) [two bit encoding of color and type]
+  - game_player (4)
+  - first_player (4)
+  - current_scores (4) [divided by 120 for normalization purpose]
+  - ego_player_id (4)
+  - remaining cards (32) [one hot encoded]
+  - teams (4) [bits of players are set to 1, if Suchsau has been played already]
+- game_history_sequence (x * 16)
+    - course_of_game: x * (12 + 4) each played card in order plus the player that played it
+- current_trick_sequence (y * 16)
+    - current_trick: y * (12 + 4) each played card in order plus the player that played it
+
+The <b>action space</b> is a 41d vector that contains
+
+- game type selection (9)
+- card selection (32)
 
 ### Policy Network
 

@@ -6,6 +6,7 @@ import torch
 from schafkopfrl.gamestate import GameState
 from schafkopfrl.memory import Memory
 from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
+from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.rl_player import RlPlayer
 from schafkopfrl.rules import Rules
 import numpy as np
@@ -18,12 +19,13 @@ class SchafkopfGame:
     The main function is play_one_game.
   """
 
-    def __init__(self, policy1, policy2, policy3, policy4, seed=None):
-        policy1.eval()
-        policy2.eval()
-        policy3.eval()
-        policy4.eval()
-        self.players = [RlPlayer(0, policy1), RlPlayer(1, policy2), RlPlayer(2, policy3), RlPlayer(3, policy4)]
+    def __init__(self, player0, player1, player2, player3, seed=None):
+        self.players = [player0, player1, player2, player3]
+
+        for p in self.players:
+            if isinstance(p, RlPlayer):
+                p.policy.eval()
+
         self.rules = Rules()
         if seed != None:
             self.setSeed(seed)
@@ -91,6 +93,7 @@ class SchafkopfGame:
     def setSeed(self, seed):
         np.random.seed(seed)
         random.seed(seed)
+        torch.manual_seed(seed)
         self.rules = Rules()
 
     def get_player_memories(self, ids=None):
@@ -188,16 +191,16 @@ def main():
 
     # policy.eval()
     policy.to(device='cuda')
+    gs = SchafkopfGame(RlPlayer(0, policy), RlPlayer(1, policy), RlPlayer(2, policy),
+                       RlPlayer(3, policy), 1)
+    #gs = SchafkopfGame(policy, policy, policy, policy, 1)
 
-    gs = SchafkopfGame(policy, policy, policy, policy, 1)
-
-    for i in range(2):
+    for i in range(1000):
         print("playing game " + str(i))
-        gs = SchafkopfGame(policy, policy, policy, policy, 1) #<--------remove this
         game_state = gs.play_one_game()
         rewards = np.array(game_state.get_rewards())
         all_rewards += rewards
-        gs.print_game(game_state)
+        #gs.print_game(game_state)
     print(all_rewards)
     print(sum(all_rewards))
 

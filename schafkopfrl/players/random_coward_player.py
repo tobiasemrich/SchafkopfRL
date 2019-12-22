@@ -9,15 +9,6 @@ class RandomCowardPlayer(Player):
   Player that chooses a game (except solo) and cards randomly
   '''
 
-  def __init__(self, id):
-    self.id = id
-    # state, action, reward, logprob trajectory
-    self.memory = Memory()
-    self.cards = []
-    self.davongelaufen = False
-    self.rules = Rules()
-
-
   def call_game_type(self, game_state):
     '''
     Calls a game according to the following rules:
@@ -34,7 +25,7 @@ class RandomCowardPlayer(Player):
 
     selected_game = random.choice(allowed_games)
 
-    return selected_game
+    return selected_game, 1
 
 
 
@@ -48,7 +39,7 @@ class RandomCowardPlayer(Player):
       rufsau = [game_state.game_type[0],7]
       if game_state.game_type[0] == selected_card[0] and selected_card != rufsau and first_player_of_trick == self.id and selected_card not in self.rules.get_sorted_trumps(game_state.game_type) and rufsau in self.cards:
         self.davongelaufen = True
-    return selected_card
+    return selected_card, 1
 
   def retrieve_reward(self, reward, game_state):
     pass

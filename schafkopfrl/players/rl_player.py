@@ -10,13 +10,8 @@ from schafkopfrl.utils import one_hot_games, one_hot_cards
 class RlPlayer(Player):
 
   def __init__(self, id, policy):
-    self.id = id
-    #state, action, reward, logprob trajectory
+    super().__init__(id)
     self.memory = Memory()
-    self.cards = []
-    self.davongelaufen = False
-    self.rules = Rules()
-
     self.policy = policy
 
   def act(self, state, allowed_actions):

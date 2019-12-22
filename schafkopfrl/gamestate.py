@@ -128,5 +128,4 @@ class GameState:
                 else:
                     rewards[player_id] = -reward
 
-        # rewards = (np.array(rewards) + np.array(self.scores)/10).tolist()
         return rewards

@@ -11,6 +11,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from schafkopfrl.experience_dataset import ExperienceDataset, custom_collate
 from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
+from schafkopfrl.players.random_coward_player import RandomCowardPlayer
+from schafkopfrl.players.rl_player import RlPlayer
 from schafkopfrl.schafkopf_game import SchafkopfGame
 
 from tensorboard import program
@@ -35,7 +37,7 @@ class PPO:
 
         self.policy = policy
         self.optimizer = torch.optim.Adam(self.policy.parameters(),
-                                          lr=self.lr, betas=betas, weight_decay=1e-5)
+                                          lr=self.lr, betas=betas, weight_decay=1e-4)
         self.lr_scheduler = StepLR(self.optimizer, step_size=self.lr_stepsize, gamma=self.lr_gamma)
         self.lr_scheduler.step(start_episode)
         self.policy_old = type(policy)().to(device)
@@ -131,14 +133,14 @@ def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpo
                 policy_new.to(device=device)
                 policy_new.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(8) + ".pt"))
 
-                gs = SchafkopfGame(policy_old, policy_new, policy_old, policy_new, 1)
+                gs = SchafkopfGame(RlPlayer(0, policy_old), RlPlayer(1, policy_new), RlPlayer(2, policy_old), RlPlayer(3,policy_new), 1)
                 all_rewards = np.array([0., 0., 0., 0.])
                 for j in range(runs):
                     game_state = gs.play_one_game()
                     rewards = np.array(game_state.get_rewards())
                     all_rewards += rewards
 
-                gs = SchafkopfGame(policy_new, policy_old, policy_new, policy_old, 1)
+                gs = SchafkopfGame(RlPlayer(0, policy_new), RlPlayer(1, policy_old), RlPlayer(2, policy_new), RlPlayer(3,policy_old), 1)
                 all_rewards = all_rewards[[1, 0, 3, 2]]
                 for j in range(runs):
                     game_state = gs.play_one_game()
@@ -150,6 +152,34 @@ def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpo
                 print(str(max_gen) + " vs " + str(i) + " = "+ str(all_rewards[0] + all_rewards[2]) + ":"+ str(all_rewards[1] + all_rewards[3]) +"\n")
                 summary_writer.add_scalar('Evaluation/generation_'+str(max_gen), all_rewards[0] + all_rewards[2], i)
 
+def play_against_other_players(checkpoint_folder, model_class, other_player_classes, runs, summary_writer):
+
+    generations = [int(f[:8]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
+    max_gen = max(generations)
+    policy = model_class()
+    policy.to(device=device)
+    policy.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(8) + ".pt"))
+
+    for other_player_class in other_player_classes:
+
+        gs = SchafkopfGame(other_player_class(0), RlPlayer(1, policy), other_player_class(2),
+                           RlPlayer(3, policy), 1)
+        all_rewards = np.array([0., 0., 0., 0.])
+        for j in range(runs):
+            game_state = gs.play_one_game()
+            rewards = np.array(game_state.get_rewards())
+            all_rewards += rewards
+
+        gs = SchafkopfGame(RlPlayer(0, policy), other_player_class(1), RlPlayer(2, policy),
+                           other_player_class(3), 1)
+        all_rewards = all_rewards[[1, 0, 3, 2]]
+        for j in range(runs):
+            game_state = gs.play_one_game()
+            # gs.print_game(game_state)
+            rewards = np.array(game_state.get_rewards())
+            all_rewards += rewards
+
+        summary_writer.add_scalar('Evaluation/' + str(other_player_class.__name__), all_rewards[0] + all_rewards[2], max_gen)
 
 def main():
 
@@ -158,7 +188,7 @@ def main():
 
     update_timestep = 5000 #5000  # update policy every n games
     save_checkpoint_every_n = 10000 #10000 save checkpoints every n games
-    evaluate_timestep = 50000 #needs to be a multiple of save_checkpoint_every_n
+    evaluate_timestep = 20000 #needs to be a multiple of save_checkpoint_every_n
     eval_games = 500
     checkpoint_folder = "policies"
 
@@ -170,7 +200,7 @@ def main():
     gamma = 0.99  # discount factor
     K_epochs = 8 #8  # update policy for K epochs
     eps_clip = 0.2  # clip parameter for PPO
-    c1, c2 = 0.5, 0.001#0.001
+    c1, c2 = 0.5, 0.005#0.001
     batch_size = 5000 #5000
     random_seed = None #<---------------------------------------------------------------- set to None
     #############################################
@@ -200,7 +230,8 @@ def main():
     ppo = PPO(policy, [lr, lr_stepsize, lr_gamma], betas, gamma, K_epochs, eps_clip, batch_size, c1=c1, c2=c2, start_episode=max_gen-1  )
 
     #create a game simulation
-    gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old, random_seed)
+
+    gs = SchafkopfGame(RlPlayer(0, ppo.policy_old), RlPlayer(1, ppo.policy_old), RlPlayer(2, ppo.policy_old), RlPlayer(3, ppo.policy_old), random_seed)
 
     # training loop
     for i_episode in range(max_gen+1, max_episodes + 1):
@@ -234,7 +265,7 @@ def main():
             ppo.writer.add_scalar('WonGames/solo', np.divide(gs.won_game_count[3],gs.game_count[3]), i_episode)
 
             # reset memories and replace policy
-            gs = SchafkopfGame(ppo.policy_old, ppo.policy_old, ppo.policy_old, ppo.policy_old, random_seed)
+            gs = SchafkopfGame(RlPlayer(0, ppo.policy_old), RlPlayer(1, ppo.policy_old), RlPlayer(2, ppo.policy_old), RlPlayer(3, ppo.policy_old), random_seed)
 
 
         # evaluation
@@ -245,6 +276,7 @@ def main():
             if i_episode % evaluate_timestep == 0:
                 print("Evaluation")
                 play_against_old_checkpoints(checkpoint_folder, model,evaluate_timestep,eval_games,ppo.writer)
+                play_against_other_players(checkpoint_folder, model, [RandomCowardPlayer], eval_games, ppo.writer, i_episode)
 
 
 if __name__ == '__main__':

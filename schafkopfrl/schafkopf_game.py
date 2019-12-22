@@ -5,9 +5,8 @@ import torch
 
 from schafkopfrl.gamestate import GameState
 from schafkopfrl.memory import Memory
-from schafkopfrl.models.actor_critic4 import ActorCriticNetwork4
 from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
-from schafkopfrl.player import Player
+from schafkopfrl.players.rl_player import RlPlayer
 from schafkopfrl.rules import Rules
 import numpy as np
 
@@ -24,7 +23,7 @@ class SchafkopfGame:
         policy2.eval()
         policy3.eval()
         policy4.eval()
-        self.players = [Player(0, policy1), Player(1, policy2), Player(2, policy3), Player(3, policy4)]
+        self.players = [RlPlayer(0, policy1), RlPlayer(1, policy2), RlPlayer(2, policy3), RlPlayer(3, policy4)]
         self.rules = Rules()
         if seed != None:
             self.setSeed(seed)

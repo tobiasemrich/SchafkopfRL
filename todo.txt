@@ -37,7 +37,7 @@ Questions
 
 * MISC
     + hard code more wenz ----> did that
-    * player_plays_card: add probability of playing that card and show it in print game
+    + player_plays_card: add probability of playing that card and show it in print game
     * loss shown in tensorboard is dependent on learning rate currently, this should be changed
     * add batchnorm (faster training?)
 

@@ -18,7 +18,7 @@ Find the most imporatant classes for the training process below.
 
 The <b>state space </b> consists of three parts (necessary bits in brackets):
 
-- info_vector (59)
+- info_vector (55)
   - game_type (7) [two bit encoding of color and type]
   - game_player (4)
   - first_player (4)

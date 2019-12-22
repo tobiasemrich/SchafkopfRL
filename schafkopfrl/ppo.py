@@ -163,7 +163,7 @@ def main():
     checkpoint_folder = "policies"
 
     lr = 0.0001
-    lr_stepsize = 200000 #300000
+    lr_stepsize = 250000 #300000
     lr_gamma = 0.3
 
     betas = (0.9, 0.999)

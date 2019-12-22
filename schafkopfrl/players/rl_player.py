@@ -6,7 +6,7 @@ from schafkopfrl.memory import Memory
 from schafkopfrl.utils import one_hot_games, one_hot_cards
 
 
-class Player():
+class RlPlayer():
 
   def __init__(self, id, policy):
     self.id = id

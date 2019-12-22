@@ -1,3 +1,4 @@
+from schafkopfrl.players.player import Player
 from schafkopfrl.rules import Rules
 import numpy as np
 import torch
@@ -6,7 +7,7 @@ from schafkopfrl.memory import Memory
 from schafkopfrl.utils import one_hot_games, one_hot_cards
 
 
-class RlPlayer():
+class RlPlayer(Player):
 
   def __init__(self, id, policy):
     self.id = id
@@ -17,10 +18,6 @@ class RlPlayer():
     self.rules = Rules()
 
     self.policy = policy
-
-  def take_cards(self, cards):
-    self.cards = cards
-    self.davongelaufen = False
 
   def act(self, state, allowed_actions):
     action_probs, value = self.policy(

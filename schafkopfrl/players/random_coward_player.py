@@ -1,9 +1,10 @@
+from schafkopfrl.players.player import Player
 from schafkopfrl.rules import Rules
 from schafkopfrl.memory import Memory
 import random
 
 
-class RandomCowardPlayer():
+class RandomCowardPlayer(Player):
   '''
   Player that chooses a game (except solo) and cards randomly
   '''
@@ -15,9 +16,6 @@ class RandomCowardPlayer():
     self.cards = []
     self.davongelaufen = False
     self.rules = Rules()
-
-  def take_cards(self, cards):
-    self.cards = cards
 
 
   def call_game_type(self, game_state):
@@ -41,7 +39,6 @@ class RandomCowardPlayer():
 
 
   def select_card(self, game_state):
-
     selected_card = random.choice(self.rules.allowed_cards(game_state, self))
 
     self.cards.remove(selected_card)
@@ -54,25 +51,5 @@ class RandomCowardPlayer():
     return selected_card
 
   def retrieve_reward(self, reward, game_state):
-    steps_per_game = 9
-    if game_state.game_type == [None, None]:
-      steps_per_game=1
-    rewards = steps_per_game*[0.]
-
-    # REWARD SHAPING: reward for each action = number of points made/lost
-    for i in range(steps_per_game-1):
-      points = game_state.count_points(i)
-      if game_state.trick_owner[i] == self.id:
-        rewards[i+1] += points/5
-      elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
-        rewards[i + 1] += points/5
-      else:
-        rewards[i + 1] -= points/5
-    #steps_since_last_reward = len(self.memory.actions) - len(self.memory.rewards)
-    #rewards = steps_since_last_reward*[0]
-    rewards[-1] += reward
-    self.memory.rewards += rewards
-    is_terminal = steps_per_game * [False]
-    is_terminal[-1] = True
-    self.memory.is_terminals += is_terminal
+    pass
 

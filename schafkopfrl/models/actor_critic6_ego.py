@@ -34,9 +34,9 @@ class ActorCriticNetwork6_ego(nn.Module):
         self.fc1 = nn.Linear(55, self.hidden_neurons)
         self.fc2 = nn.Linear(self.hidden_neurons*3, self.hidden_neurons)
         #self.fc2_bn = nn.BatchNorm1d(2048)
-        self.fc3a = nn.Linear(self.hidden_neurons, self.hidden_neurons)
+        #self.fc3a = nn.Linear(self.hidden_neurons, self.hidden_neurons)
         #self.fc3a_bn = nn.BatchNorm1d(1024)
-        self.fc3b = nn.Linear(self.hidden_neurons, self.hidden_neurons)
+        #self.fc3b = nn.Linear(self.hidden_neurons, self.hidden_neurons)
         #self.fc3b_bn = nn.BatchNorm1d(1024)
         self.fc4a = nn.Linear(self.hidden_neurons, 41)
         self.fc4b = nn.Linear(self.hidden_neurons, 1)
@@ -57,10 +57,10 @@ class ActorCriticNetwork6_ego(nn.Module):
         x = F.relu(self.fc1(info_vector))
         x = torch.cat((x, torch.squeeze(h2_), torch.squeeze(h4_)), -1)
         x = F.relu(self.fc2(x))
-        ax = F.relu(self.fc3a(x))
-        bx = F.relu(self.fc3b(x))
-        ax = self.fc4a(ax)
-        bx = self.fc4b(bx)
+        #ax = F.relu(self.fc3a(x))
+        #bx = F.relu(self.fc3b(x))
+        ax = self.fc4a(x) #<--------call it ax
+        bx = self.fc4b(x) #<--------call it bx
         #print(ax.tolist())
 
         ax = ax.masked_fill(allowed_actions == 0, -1e9)

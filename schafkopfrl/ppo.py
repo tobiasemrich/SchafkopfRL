@@ -81,7 +81,7 @@ class PPO:
         avg_value_loss = 0
         avg_entropy = 0
         count = 0
-        for _ in range(self.K_epochs):
+        for epoch in range(self.K_epochs):
             for old_states, old_actions, old_allowed_actions, old_logprobs, old_rewards in training_generator:
 
                 # Transfer to GPU
@@ -101,11 +101,12 @@ class PPO:
                 value_loss = self.MseLoss(state_values, old_rewards)
                 loss = -torch.min(surr1, surr2) + self.c1 * value_loss - self.c2 * dist_entropy
 
-                #logging
-                avg_loss += loss.mean().item()
-                avg_value_loss += value_loss.mean().item()
-                avg_entropy += dist_entropy.mean().item()
-                count+=1
+                #logging losses only in the first epoch, otherwise they will be dependent on the learning rate
+                if epoch == 0:
+                    avg_loss += loss.mean().item()
+                    avg_value_loss += value_loss.mean().item()
+                    avg_entropy += dist_entropy.mean().item()
+                    count+=1
 
                 # take gradient step
                 self.optimizer.zero_grad()
@@ -276,7 +277,7 @@ def main():
             if i_episode % evaluate_timestep == 0:
                 print("Evaluation")
                 play_against_old_checkpoints(checkpoint_folder, model,evaluate_timestep,eval_games,ppo.writer)
-                play_against_other_players(checkpoint_folder, model, [RandomCowardPlayer], eval_games, ppo.writer, i_episode)
+                play_against_other_players(checkpoint_folder, model, [RandomCowardPlayer], eval_games, ppo.writer)
 
 
 if __name__ == '__main__':

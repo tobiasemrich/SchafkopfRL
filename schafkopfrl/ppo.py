@@ -187,13 +187,15 @@ def main():
     ############## Hyperparameters ##############
     max_episodes = 9000000  # max training episodes
 
-    update_timestep = 5000 #5000  # update policy every n games
+    update_timestep = 10000 #5000  # update policy every n games
     save_checkpoint_every_n = 10000 #10000 save checkpoints every n games
-    evaluate_timestep = 20000 #needs to be a multiple of save_checkpoint_every_n
+    small_evaluate_timestep = 20000 #needs to be a multiple of save_checkpoint_every_n
+    large_evaluate_timestep = 50000  # needs to be a multiple of save_checkpoint_every_n
     eval_games = 500
     checkpoint_folder = "policies"
 
-    lr = 0.0001
+    lr = 0.00
+    1 # 0.0001
     lr_stepsize = 250000 #300000
     lr_gamma = 0.3
 
@@ -274,10 +276,12 @@ def main():
             print("Saving Checkpoint")
             torch.save(ppo.policy_old.state_dict(), checkpoint_folder + "/" + str(i_episode).zfill(8) + ".pt")
 
-            if i_episode % evaluate_timestep == 0:
-                print("Evaluation")
-                play_against_old_checkpoints(checkpoint_folder, model,evaluate_timestep,eval_games,ppo.writer)
+            if i_episode % small_evaluate_timestep == 0:
+                print("Small Evaluation")
                 play_against_other_players(checkpoint_folder, model, [RandomCowardPlayer], eval_games, ppo.writer)
+            if i_episode % large_evaluate_timestep == 0:
+                print("Large Evaluation")
+                play_against_old_checkpoints(checkpoint_folder, model, large_evaluate_timestep, eval_games, ppo.writer)
 
 
 if __name__ == '__main__':

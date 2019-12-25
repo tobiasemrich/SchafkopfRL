@@ -1,4 +1,4 @@
-# SchafkopftRL
+# SchafkopfRL
 
 Training a reinforcement learning agent to play the four player card game Schafkopfen. Uses an Actor-Critic Network and proximal policy optimization for training.
 
@@ -6,6 +6,8 @@ Training a reinforcement learning agent to play the four player card game Schafk
 Schafkopf is a traditional bavarian 4 player trick based card game with imperfect information. It has both competetive and cooperative game elements.
 
 There are a lot of different variations (allowed game types, allowed doubling mechanisms, ...) and reward schemes. A good overview can be found at https://en.wikipedia.org/wiki/Schafkopf
+
+The current focus of this project is to develop an AI that is able to play the basic game types Sauspiel, Farbsolo and Wenz (doubles like "Spritzen" and "Legen" will be added later) 
 
 ## Documentation
 

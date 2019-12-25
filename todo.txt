@@ -40,7 +40,10 @@ Questions
     + player_plays_card: add probability of playing that card and show it in print game
     * loss shown in tensorboard is dependent on learning rate currently, this should be changed
     * add batchnorm (faster training?)
+    * use gru instead of LSTM
+    * current trick encoding: one lstm layer should be enough
 
 * new metrics to see that the learner makes progress
     * number of times a player plays a lower card than is played although he could take the trick
     * play against a rule based bot
+

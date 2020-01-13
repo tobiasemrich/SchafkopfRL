@@ -1,4 +1,5 @@
 import random
+import time
 from os import listdir
 
 import torch
@@ -27,8 +28,7 @@ class SchafkopfGame:
                 p.policy.eval()
 
         self.rules = Rules()
-        if seed != None:
-            self.setSeed(seed)
+        self.setSeed(seed)
 
         # some logging counts
         self.game_count = [0, 0, 0, 0]  # weiter, sauspiel, wenz, solo
@@ -91,6 +91,8 @@ class SchafkopfGame:
         return game_state
 
     def setSeed(self, seed):
+        if seed == None:
+            seed = int(time.time() * 1000) % 2**32
         np.random.seed(seed)
         random.seed(seed)
         torch.manual_seed(seed)

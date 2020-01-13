@@ -151,7 +151,7 @@ def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpo
 
 
                 print(str(max_gen) + " vs " + str(i) + " = "+ str(all_rewards[0] + all_rewards[2]) + ":"+ str(all_rewards[1] + all_rewards[3]) +"\n")
-                summary_writer.add_scalar('Evaluation/generation_'+str(max_gen), all_rewards[0] + all_rewards[2], i)
+                summary_writer.add_scalar('Evaluation/generation_'+str(max_gen), (all_rewards[0] + all_rewards[2])/(2*runs), i)
 
 def play_against_other_players(checkpoint_folder, model_class, other_player_classes, runs, summary_writer):
 
@@ -180,7 +180,7 @@ def play_against_other_players(checkpoint_folder, model_class, other_player_clas
             rewards = np.array(game_state.get_rewards())
             all_rewards += rewards
 
-        summary_writer.add_scalar('Evaluation/' + str(other_player_class.__name__), all_rewards[0] + all_rewards[2], max_gen)
+        summary_writer.add_scalar('Evaluation/' + str(other_player_class.__name__), (all_rewards[0] + all_rewards[2])/(2*runs), max_gen)
 
 def main():
 
@@ -194,8 +194,7 @@ def main():
     eval_games = 500
     checkpoint_folder = "policies"
 
-    lr = 0.00
-    1 # 0.0001
+    lr = 0.001 # 0.0001
     lr_stepsize = 250000 #300000
     lr_gamma = 0.3
 

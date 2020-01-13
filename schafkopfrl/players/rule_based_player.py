@@ -128,7 +128,7 @@ class RuleBasedPlayer(Player):
     return selected_card
 
   def lowest_card_that_takes_trick(self, allowed_cards, trick):
-
+    pass
   def retrieve_reward(self, reward, game_state):
     pass
 

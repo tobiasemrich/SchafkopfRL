@@ -42,7 +42,7 @@ class RuleBasedPlayer(Player):
         if card in self.cards:
           trump_count+= 1
       if trump_count >= 7:
-        return [solo]
+        return solo, 1
 
     # wenz heurisitc
     wenz_count = len([card for card in [[0, 3], [1, 3], [2, 3], [3, 3]] if card in self.cards])
@@ -57,7 +57,7 @@ class RuleBasedPlayer(Player):
           if [color, number] in self.cards:
             spazen_count += 1
       if spazen_count < 2:
-        return [[None, 1]]
+        return [None, 1], 1
 
     # sauspiel heuristic
     trumps = [card for card in self.rules.get_sorted_trumps([0,0]) if card in self.cards]
@@ -72,9 +72,9 @@ class RuleBasedPlayer(Player):
           color_count = len([[color,_] for [color,_] in  non_trump_cards])
           if color_count < best_color_count:
             best_color = color
-        return [best_color, 0]
+        return [best_color, 0], 1
 
-    return [None, None]
+    return [None, None], 1
 
 
 
@@ -86,27 +86,34 @@ class RuleBasedPlayer(Player):
     if len(self.cards) == 8 and game_state.game_player == self.id or (game_state.game_type in [[0, 0], [2, 0], [3, 0]] and [game_state.game_type[0],7] in self.cards):
       self.spieler_or_mitspieler = True
     played_cards_in_trick = game_state.played_cards % 4
-    trump_cards = [trump for trump in self.rules.get_sorted_trumps() if trump in allowed_cards]
+    trump_cards = [trump for trump in self.rules.get_sorted_trumps(game_state.game_type) if trump in allowed_cards]
     color_aces = [ace for ace in allowed_cards if ace in [[0, 7], [1, 7], [2, 7], [3, 7]]]
+    played_colors = {c for [c, n] in [trick[0] for trick in game_state.course_of_game if trick[0] != None] if n not in [3, 4]}
+    first_card_in_trick = game_state.course_of_game[game_state.trick_number][0]
 
 
     if game_state.game_type in [[0, 0], [2, 0], [3, 0]]: #Sauspiel
       if [1, 7] in color_aces:
         color_aces.remove([1, 7])
+      if [game_state.game_type[0], 7]  in color_aces: #Suchsau
+        color_aces.remove([game_state.game_type[0], 7])
       if self.spieler_or_mitspieler:
         if played_cards_in_trick == 0:
           # play highest or lowest trump if possible
           if len(trump_cards) > 0:
-            selected_card = random.choice(trump_cards[[0, -1]])
+            idx = random.choice([0, -1])
+            selected_card = trump_cards[idx]
           #otherwise play an ace
           elif len(color_aces) > 0:
             selected_card = random.choice(color_aces)
         else:
-          pass
+          if first_card_in_trick not in self.rules.get_sorted_trumps(game_state.game_type):
+            pass
+
 
     elif game_state.game_type in [[0, 2], [1, 2], [2, 2], [3, 2]]: #Solo
       if [game_state.game_type[0], 7] in color_aces:
-        color_aces.remove([1, 7])
+        color_aces.remove([game_state.game_type[0], 7])
       if played_cards_in_trick == 0:
         if len(trump_cards) > 0:
           selected_card = trump_cards[-1]
@@ -125,7 +132,8 @@ class RuleBasedPlayer(Player):
       rufsau = [game_state.game_type[0],7]
       if game_state.game_type[0] == selected_card[0] and selected_card != rufsau and first_player_of_trick == self.id and selected_card not in self.rules.get_sorted_trumps(game_state.game_type) and rufsau in self.cards:
         self.davongelaufen = True
-    return selected_card
+
+    return selected_card, 1
 
   def lowest_card_that_takes_trick(self, allowed_cards, trick):
     pass

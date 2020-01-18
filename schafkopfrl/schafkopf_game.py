@@ -9,6 +9,7 @@ from schafkopfrl.memory import Memory
 from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.rl_player import RlPlayer
+from schafkopfrl.players.rule_based_player import RuleBasedPlayer
 from schafkopfrl.rules import Rules
 import numpy as np
 
@@ -182,7 +183,7 @@ class SchafkopfGame:
 
 def main():
     all_rewards = np.array([0, 0, 0, 0])
-
+    '''
     policy = ActorCriticNetwork6_ego()
     # take the newest generation available
     # file pattern = policy-000001.pt
@@ -193,11 +194,12 @@ def main():
 
     # policy.eval()
     policy.to(device='cuda')
-    gs = SchafkopfGame(RlPlayer(0, policy), RlPlayer(1, policy), RlPlayer(2, policy),
-                       RlPlayer(3, policy), 1)
+    '''
+    #gs = SchafkopfGame(RlPlayer(0, policy), RlPlayer(1, policy), RlPlayer(2, policy), RlPlayer(3, policy), 1)
+    gs = SchafkopfGame(RandomCowardPlayer(0), RuleBasedPlayer(1), RandomCowardPlayer(2),  RuleBasedPlayer(3), 1)
     #gs = SchafkopfGame(policy, policy, policy, policy, 1)
 
-    for i in range(1000):
+    for i in range(10000):
         print("playing game " + str(i))
         game_state = gs.play_one_game()
         rewards = np.array(game_state.get_rewards())

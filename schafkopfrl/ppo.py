@@ -13,6 +13,7 @@ from schafkopfrl.experience_dataset import ExperienceDataset, custom_collate
 from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.rl_player import RlPlayer
+from schafkopfrl.players.rule_based_player import RuleBasedPlayer
 from schafkopfrl.schafkopf_game import SchafkopfGame
 
 from tensorboard import program
@@ -37,7 +38,7 @@ class PPO:
 
         self.policy = policy
         self.optimizer = torch.optim.Adam(self.policy.parameters(),
-                                          lr=self.lr, betas=betas, weight_decay=1e-4)
+                                          lr=self.lr, betas=betas, weight_decay=5e-5)
         self.lr_scheduler = StepLR(self.optimizer, step_size=self.lr_stepsize, gamma=self.lr_gamma)
         self.lr_scheduler.step(start_episode)
         self.policy_old = type(policy)().to(device)
@@ -45,18 +46,19 @@ class PPO:
 
         self.MseLoss = nn.MSELoss()
 
-        self.writer = SummaryWriter()
+        self.writer = SummaryWriter(log_dir="../runs")
 
     def update(self, memory, i_episode):
 
         #alpha = 1-i_episode/900000
-        alpha = 1
+
         self.policy.train()
 
+        #alpha = 1
         #decay learning rate and eps_clip
-        for g in self.optimizer.param_groups:
-            g['lr'] = self.lr * alpha
-        adapted_eps_clip = self.eps_clip*alpha
+        #for g in self.optimizer.param_groups:
+        #    g['lr'] = self.lr * alpha
+        adapted_eps_clip = self.eps_clip
 
         # Monte Carlo estimate of state rewards:
         rewards = []
@@ -67,9 +69,14 @@ class PPO:
             discounted_reward = reward + (self.gamma * discounted_reward)
             rewards.insert(0, discounted_reward)
 
+
+        print("AVG rewards: "+ str(np.mean(rewards)))
+        print("STD rewards: " + str(np.std(rewards)))
         # Normalizing the rewards:
         rewards = np.array(rewards)
         rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-5)
+
+
 
         # Create dataset from collected experiences
         experience_dataset = ExperienceDataset(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
@@ -80,6 +87,8 @@ class PPO:
         avg_loss = 0
         avg_value_loss = 0
         avg_entropy = 0
+        avg_clip_fraction = 0
+        avg_approx_kl_divergence = 0
         count = 0
         for epoch in range(self.K_epochs):
             for old_states, old_actions, old_allowed_actions, old_logprobs, old_rewards in training_generator:
@@ -101,11 +110,16 @@ class PPO:
                 value_loss = self.MseLoss(state_values, old_rewards)
                 loss = -torch.min(surr1, surr2) + self.c1 * value_loss - self.c2 * dist_entropy
 
+                clip_fraction =(abs(ratios - 1.0) > adapted_eps_clip).type(torch.FloatTensor).mean
+                approx_kl_divergence = .5 * ((logprobs - old_logprobs.detach()) ** 2).mean()
+
                 #logging losses only in the first epoch, otherwise they will be dependent on the learning rate
                 if epoch == 0:
                     avg_loss += loss.mean().item()
                     avg_value_loss += value_loss.mean().item()
                     avg_entropy += dist_entropy.mean().item()
+                    avg_clip_fraction += clip_fraction
+                    avg_approx_kl_divergence += approx_kl_divergence
                     count+=1
 
                 # take gradient step
@@ -119,9 +133,12 @@ class PPO:
         self.writer.add_scalar('Loss/value_loss', avg_value_loss / count, i_episode)
         self.writer.add_scalar('Loss/entropy', avg_entropy / count, i_episode)
         self.writer.add_scalar('Loss/learning_rate', self.lr_scheduler.get_lr()[0], i_episode)
+        self.writer.add_scalar('Loss/ppo_clipping_fraction', avg_clip_fraction/count, i_episode)
+        self.writer.add_scalar('Loss/approx_kl_divergence', avg_approx_kl_divergence / count, i_episode)
 
 def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpoint, runs, summary_writer):
     generations = [int(f[:8]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
+    generations.sort()
     if len(generations) > 1:
         max_gen = max(generations)
         for i in generations:
@@ -185,17 +202,18 @@ def play_against_other_players(checkpoint_folder, model_class, other_player_clas
 def main():
 
     ############## Hyperparameters ##############
-    max_episodes = 9000000  # max training episodes
+    max_episodes = 90000000  # max training episodes
 
-    update_timestep = 10000 #5000  # update policy every n games
-    save_checkpoint_every_n = 10000 #10000 save checkpoints every n games
-    small_evaluate_timestep = 20000 #needs to be a multiple of save_checkpoint_every_n
-    large_evaluate_timestep = 50000  # needs to be a multiple of save_checkpoint_every_n
+    update_timestep = 50000 #5000  # update policy every n games
+    save_checkpoint_every_n = 50000 #10000 save checkpoints every n games
+    small_evaluate_timestep = 50000 #needs to be a multiple of save_checkpoint_every_n
+    large_evaluate_timestep = 200000  # needs to be a multiple of save_checkpoint_every_n
     eval_games = 500
-    checkpoint_folder = "policies"
+    checkpoint_folder = "../policies"
 
-    lr = 0.001 # 0.0001
-    lr_stepsize = 250000 #300000
+    #lr = 0.0003
+    lr = 0.00001
+    lr_stepsize = 30000000 #300000
     lr_gamma = 0.3
 
     betas = (0.9, 0.999)
@@ -203,15 +221,17 @@ def main():
     K_epochs = 8 #8  # update policy for K epochs
     eps_clip = 0.2  # clip parameter for PPO
     c1, c2 = 0.5, 0.005#0.001
-    batch_size = 5000 #5000
+    batch_size = 50000 #5000
     random_seed = None #<---------------------------------------------------------------- set to None
     #############################################
+
+    print("Cuda available: "+str(torch.cuda.is_available()))
 
     model = ActorCriticNetwork6_ego
 
     #start tensorboard
     tb = program.TensorBoard()
-    tb.configure(argv=[None, '--logdir', "runs"])
+    tb.configure(argv=[None, '--logdir', "../runs"])
     tb.launch()
 
     # creating environment
@@ -277,10 +297,10 @@ def main():
 
             if i_episode % small_evaluate_timestep == 0:
                 print("Small Evaluation")
-                play_against_other_players(checkpoint_folder, model, [RandomCowardPlayer], eval_games, ppo.writer)
-            if i_episode % large_evaluate_timestep == 0:
-                print("Large Evaluation")
-                play_against_old_checkpoints(checkpoint_folder, model, large_evaluate_timestep, eval_games, ppo.writer)
+                play_against_other_players(checkpoint_folder, model, [RandomCowardPlayer, RuleBasedPlayer], eval_games, ppo.writer)
+            #if i_episode % large_evaluate_timestep == 0:
+            #    print("Large Evaluation")
+            #    play_against_old_checkpoints(checkpoint_folder, model, large_evaluate_timestep, eval_games, ppo.writer)
 
 
 if __name__ == '__main__':

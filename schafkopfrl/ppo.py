@@ -89,6 +89,7 @@ class PPO:
         avg_entropy = 0
         avg_clip_fraction = 0
         avg_approx_kl_divergence = 0
+        avg_explained_var = 0
         count = 0
         for epoch in range(self.K_epochs):
             for old_states, old_actions, old_allowed_actions, old_logprobs, old_rewards in training_generator:
@@ -112,6 +113,7 @@ class PPO:
 
                 clip_fraction = (abs(ratios - 1.0) > adapted_eps_clip).type(torch.FloatTensor).mean()
                 approx_kl_divergence = .5 * ((logprobs - old_logprobs.detach()) ** 2).mean()
+                explained_var = 1-torch.var(old_rewards - state_values) / torch.var(old_rewards)
 
                 #logging losses only in the first epoch, otherwise they will be dependent on the learning rate
                 if epoch == 0:
@@ -120,6 +122,7 @@ class PPO:
                     avg_entropy += dist_entropy.mean().item()
                     avg_clip_fraction += clip_fraction.item()
                     avg_approx_kl_divergence += approx_kl_divergence.item()
+                    avg_explained_var += explained_var.mean().item()
                     count+=1
 
                 # take gradient step
@@ -135,6 +138,7 @@ class PPO:
         self.writer.add_scalar('Loss/learning_rate', self.lr_scheduler.get_lr()[0], i_episode)
         self.writer.add_scalar('Loss/ppo_clipping_fraction', avg_clip_fraction/count, i_episode)
         self.writer.add_scalar('Loss/approx_kl_divergence', avg_approx_kl_divergence / count, i_episode)
+        self.writer.add_scalar('Loss/avg_explained_var', avg_explained_var / count, i_episode)
 
 def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpoint, runs, summary_writer):
     generations = [int(f[:8]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
@@ -211,8 +215,7 @@ def main():
     eval_games = 500
     checkpoint_folder = "../policies"
 
-    #lr = 0.0003
-    lr = 0.00001
+    lr = 0.001
     lr_stepsize = 30000000 #300000
     lr_gamma = 0.3
 

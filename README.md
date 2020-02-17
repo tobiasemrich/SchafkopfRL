@@ -41,6 +41,24 @@ The <b>action space</b> is a 41d vector that contains
 ### Policy Network
 <img src="documentation/network.jpg">
 
+### Results
+Playing against other players with 20/50 tariffs
+
+<table>
+    <tr>
+        <th>Policy Network</th>
+        <th>Hyperparameter</th>
+        <th>against Random (cent/game)</th>
+        <th>against Rule-based (cent/game)</th>
+    </tr>
+    <tr>
+        <td>LSTM-based</td>
+        <td>lr = 0.0001, batch_size = 50000, c1 = 0.5, c2 = 0.005, steps = 5M</td>
+        <td>14.2</td>
+        <td>9.7</td>
+    </tr>
+</table>
+
 ## Resources
 - PPO Paper: https://arxiv.org/abs/1707.06347
 - Pytorch implementation of PPO: https://github.com/nikhilbarhate99/PPO-PyTorch

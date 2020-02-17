@@ -8,9 +8,11 @@ from torch.optim.lr_scheduler import  StepLR
 
 from torch.utils import data
 from torch.utils.tensorboard import SummaryWriter
-
-from schafkopfrl.experience_dataset import ExperienceDataset, custom_collate
-from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
+from schafkopfrl import experience_dataset_linear
+from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM, custom_collate
+from schafkopfrl.experience_dataset_linear import ExperienceDatasetLinear
+from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
+from schafkopfrl.models.actor_critic_linear import ActorCriticNetworkLinear
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.rl_player import RlPlayer
 from schafkopfrl.players.rule_based_player import RuleBasedPlayer
@@ -79,8 +81,9 @@ class PPO:
 
 
         # Create dataset from collected experiences
-        experience_dataset = ExperienceDataset(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
-        training_generator = data.DataLoader(experience_dataset, collate_fn=custom_collate, batch_size=self.batch_size, shuffle=True)
+        experience_dataset = ExperienceDatasetLinear(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
+
+        training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_linear.custom_collate, batch_size=self.batch_size, shuffle=True)
 
 
         # Optimize policy for K epochs:
@@ -230,7 +233,7 @@ def main():
 
     print("Cuda available: "+str(torch.cuda.is_available()))
 
-    model = ActorCriticNetwork6_ego
+    model = ActorCriticNetworkLinear
 
     #start tensorboard
     tb = program.TensorBoard()
@@ -264,21 +267,21 @@ def main():
         #gs.setSeed(random_seed)  # <------------------------------------remove this
 
         # Running policy_old:
-        t0 = time.time_ns()
+        t0 = time.time()
         game_state = gs.play_one_game()
-        t1 = time.time_ns()
+        t1 = time.time()
 
         # update if its time
         if i_episode % update_timestep == 0:
             print("Update")
-            t2 = time.time_ns()
+            t2 = time.time()
             ppo.update(gs.get_player_memories(), i_episode)
-            t3 = time.time_ns()
+            t3 = time.time()
             ppo.lr_scheduler.step(i_episode)
 
 
             # logging
-            print("Episode: "+str(i_episode) + " game simulation (ms) = "+str((t1-t0)/1000000) + " update (ms) = "+str((t3-t2)/1000000))
+            print("Episode: "+str(i_episode) + " game simulation (s) = "+str((t1-t0)/1000000) + " update (s) = "+str((t3-t2)/1000000))
             gs.print_game(game_state) #<------------------------------------remove
             ppo.writer.add_scalar('Games/weiter', gs.game_count[0]/update_timestep, i_episode)
             ppo.writer.add_scalar('Games/sauspiel', gs.game_count[1] / update_timestep, i_episode)

@@ -1,7 +1,7 @@
 import torch
 from torch.utils import data
 
-class ExperienceDataset(data.Dataset):
+class ExperienceDatasetLSTM(data.Dataset):
 
   'Characterizes a dataset for PyTorch'
   def __init__(self, states, actions, allowed_actions, logprobs, rewards):

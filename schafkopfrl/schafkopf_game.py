@@ -6,7 +6,7 @@ import torch
 
 from schafkopfrl.gamestate import GameState
 from schafkopfrl.memory import Memory
-from schafkopfrl.models.actor_critic6_ego import ActorCriticNetwork6_ego
+from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.rl_player import RlPlayer
 from schafkopfrl.players.rule_based_player import RuleBasedPlayer

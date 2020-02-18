@@ -19,8 +19,6 @@ from schafkopfrl.players.rule_based_player import RuleBasedPlayer
 from schafkopfrl.schafkopf_game import SchafkopfGame
 
 from tensorboard import program
-from schafkopfrl.models.actor_critic4 import ActorCriticNetwork4
-from schafkopfrl.models.actor_critic5 import ActorCriticNetwork5
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -103,6 +101,7 @@ class PPO:
 
                 # Evaluating old actions and values :
                 logprobs, state_values, dist_entropy = self.policy.evaluate(old_states,old_allowed_actions, old_actions)
+
 
                 # Finding the ratio (pi_theta / pi_theta__old):
                 ratios = torch.exp(logprobs - old_logprobs.detach())
@@ -211,7 +210,7 @@ def main():
     ############## Hyperparameters ##############
     max_episodes = 90000000  # max training episodes
 
-    update_timestep = 50000 #5000  # update policy every n games
+    update_timestep = 10000 #5000  # update policy every n games
     save_checkpoint_every_n = 50000 #10000 save checkpoints every n games
     small_evaluate_timestep = 50000 #needs to be a multiple of save_checkpoint_every_n
     large_evaluate_timestep = 200000  # needs to be a multiple of save_checkpoint_every_n
@@ -227,7 +226,7 @@ def main():
     K_epochs = 8 #8  # update policy for K epochs
     eps_clip = 0.2  # clip parameter for PPO
     c1, c2 = 0.5, 0.005#0.001
-    batch_size = 50000 #5000
+    batch_size = 10000 #5000
     random_seed = None #<---------------------------------------------------------------- set to None
     #############################################
 
@@ -281,7 +280,7 @@ def main():
 
 
             # logging
-            print("Episode: "+str(i_episode) + " game simulation (s) = "+str((t1-t0)/1000000) + " update (s) = "+str((t3-t2)/1000000))
+            print("Episode: "+str(i_episode) + " game simulation (s) = "+str(t1-t0) + " update (s) = "+str(t3-t2))
             gs.print_game(game_state) #<------------------------------------remove
             ppo.writer.add_scalar('Games/weiter', gs.game_count[0]/update_timestep, i_episode)
             ppo.writer.add_scalar('Games/sauspiel', gs.game_count[1] / update_timestep, i_episode)

@@ -20,6 +20,8 @@ from schafkopfrl.schafkopf_game import SchafkopfGame
 
 from tensorboard import program
 
+import logging
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PPO:
@@ -48,6 +50,14 @@ class PPO:
 
         self.writer = SummaryWriter(log_dir="../runs")
 
+        self.logger = logging.getLogger(__name__)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+        self.logger.addHandler(ch)
+        self.logger.setLevel(logging.INFO)
+
     def update(self, memory, i_episode):
 
         #alpha = 1-i_episode/900000
@@ -67,11 +77,13 @@ class PPO:
             if is_terminal:
                 discounted_reward = 0
             discounted_reward = reward + (self.gamma * discounted_reward)
-            rewards.insert(0, discounted_reward)
+            #rewards.insert(0, discounted_reward)
+            rewards.append(discounted_reward)
+        rewards.reverse()
 
 
-        print("AVG rewards: "+ str(np.mean(rewards)))
-        print("STD rewards: " + str(np.std(rewards)))
+        self.logger.info("AVG rewards: "+ str(np.mean(rewards)))
+        self.logger.info("STD rewards: " + str(np.std(rewards)))
         # Normalizing the rewards:
         rewards = np.array(rewards)
         rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-5)
@@ -83,6 +95,10 @@ class PPO:
 
         training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_linear.custom_collate, batch_size=self.batch_size, shuffle=True)
 
+        #try:
+        #    torch.multiprocessing.set_start_method('fork', force=True)
+        #except RuntimeError:
+        #    pass
 
         # Optimize policy for K epochs:
         avg_loss = 0
@@ -210,14 +226,16 @@ def main():
     ############## Hyperparameters ##############
     max_episodes = 90000000  # max training episodes
 
-    update_timestep = 10000 #5000  # update policy every n games
-    save_checkpoint_every_n = 50000 #10000 save checkpoints every n games
-    small_evaluate_timestep = 50000 #needs to be a multiple of save_checkpoint_every_n
+    step = 100000
+
+    update_timestep = step #5000  # update policy every n games
+    save_checkpoint_every_n = step #10000 save checkpoints every n games
+    small_evaluate_timestep = step #needs to be a multiple of save_checkpoint_every_n
     large_evaluate_timestep = 200000  # needs to be a multiple of save_checkpoint_every_n
     eval_games = 500
     checkpoint_folder = "../policies"
 
-    lr = 0.001
+    lr = 0.002
     lr_stepsize = 30000000 #300000
     lr_gamma = 0.3
 
@@ -226,7 +244,7 @@ def main():
     K_epochs = 8 #8  # update policy for K epochs
     eps_clip = 0.2  # clip parameter for PPO
     c1, c2 = 0.5, 0.005#0.001
-    batch_size = 10000 #5000
+    batch_size = step*6 #5000
     random_seed = None #<---------------------------------------------------------------- set to None
     #############################################
 
@@ -272,15 +290,18 @@ def main():
 
         # update if its time
         if i_episode % update_timestep == 0:
-            print("Update")
+
             t2 = time.time()
-            ppo.update(gs.get_player_memories(), i_episode)
+            ppo.logger.info("reading player memories")
+            mems = gs.get_player_memories()
+            ppo.logger.info("update")
+            ppo.update(mems, i_episode)
             t3 = time.time()
             ppo.lr_scheduler.step(i_episode)
 
 
             # logging
-            print("Episode: "+str(i_episode) + " game simulation (s) = "+str(t1-t0) + " update (s) = "+str(t3-t2))
+            ppo.logger.info("Episode: "+str(i_episode) + " game simulation (s) = "+str(t1-t0) + " update (s) = "+str(t3-t2))
             gs.print_game(game_state) #<------------------------------------remove
             ppo.writer.add_scalar('Games/weiter', gs.game_count[0]/update_timestep, i_episode)
             ppo.writer.add_scalar('Games/sauspiel', gs.game_count[1] / update_timestep, i_episode)
@@ -297,15 +318,16 @@ def main():
 
         # evaluation
         if i_episode % save_checkpoint_every_n == 0:
-            print("Saving Checkpoint")
+            ppo.logger.info("Saving Checkpoint")
             torch.save(ppo.policy_old.state_dict(), checkpoint_folder + "/" + str(i_episode).zfill(8) + ".pt")
 
             if i_episode % small_evaluate_timestep == 0:
-                print("Small Evaluation")
+                ppo.logger.info("Small Evaluation")
                 play_against_other_players(checkpoint_folder, model, [RandomCowardPlayer, RuleBasedPlayer], eval_games, ppo.writer)
             #if i_episode % large_evaluate_timestep == 0:
             #    print("Large Evaluation")
             #    play_against_old_checkpoints(checkpoint_folder, model, large_evaluate_timestep, eval_games, ppo.writer)
+            ppo.logger.info("Running next Episodes")
 
 
 if __name__ == '__main__':

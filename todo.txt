@@ -1,3 +1,9 @@
+* todo
++ already done
+
+
+
+
 Missing Functions
     * include klopfen
     * include spritzen
@@ -6,7 +12,6 @@ Missing Functions
         * wenn schon gesucht wurde
         * beim letzten Stich
     * davonlaufen: werden die teams gesetzt?
-    + learning rate scheduler
 
 Things I added that I don't like
     * points add to rewards
@@ -38,12 +43,13 @@ Questions
 * MISC
     + hard code more wenz ----> did that
     + player_plays_card: add probability of playing that card and show it in print game
-    * loss shown in tensorboard is dependent on learning rate currently, this should be changed
+    + loss shown in tensorboard is dependent on learning rate currently, this should be changed
     * add batchnorm (faster training?)
     * use gru instead of LSTM
     * current trick encoding: one lstm layer should be enough
 
 * new metrics to see that the learner makes progress
     * number of times a player plays a lower card than is played although he could take the trick
-    * play against a rule based bot
+    + play against a rule based bot
+    * improve rule-based bot
 

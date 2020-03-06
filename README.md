@@ -42,20 +42,28 @@ The <b>action space</b> is a 41d vector that contains
 <img src="documentation/network.jpg">
 
 ### Results
-Playing against other players with 20/50 tariffs
+Playing against other players with 20/50 tariffs:
+- Random-Coward: Selects game randomly, but no solo game. Selects cards randomly.
+- Rule-Based: Selects solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
 
 <table>
     <tr>
         <th>Policy Network</th>
         <th>Hyperparameter</th>
-        <th>against Random (cent/game)</th>
-        <th>against Rule-based (cent/game)</th>
+        <th>against Random-Coward(cent/game)</th>
+        <th>against Rule-Based (cent/game)</th>
     </tr>
     <tr>
         <td>LSTM-based</td>
-        <td>lr = 0.0001, batch_size = 50000, c1 = 0.5, c2 = 0.005, steps = 5M</td>
+        <td>lr = 0.0001, update every 50K games, batch_size = 50K, c1 = 0.5, c2 = 0.005, steps = 5M</td>
         <td>14.2</td>
         <td>9.7</td>
+    </tr>
+    <tr>
+        <td>Linear</td>
+        <td>lr = 0.002, update every 100K games, batch_size = 600K, c1 = 0.5, c2 = 0.005, steps = 15M</td>
+        <td>11.2</td>
+        <td>8.5</td>
     </tr>
 </table>
 
@@ -63,6 +71,5 @@ Playing against other players with 20/50 tariffs
 - PPO Paper: https://arxiv.org/abs/1707.06347
 - Pytorch implementation of PPO: https://github.com/nikhilbarhate99/PPO-PyTorch
 - PPO parameter ranges: https://github.com/Unity-Technologies/ml-agents/blob/master/docs/Training-PPO.md
-- Another Schafkopf RL project: https://github.com/clauszitzelsberger/Schafkopf_RL
 - Another card game (Big2) tackled using RL with PPO: https://github.com/henrycharlesworth/big2_PPOalgorithm/
 - Nice overview paper AI for card games: https://arxiv.org/pdf/1906.04439.pdf

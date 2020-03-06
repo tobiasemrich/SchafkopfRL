@@ -67,7 +67,7 @@ Playing against other players with 20/50 tariffs (+10 for each "Laufenden" when 
     </tr>
 </table>
 
-Example training run output of tensorflow
+Example training run output of tensorboard (for the linear model)
 <img src="documentation/example_run.png">
 
 ## Resources

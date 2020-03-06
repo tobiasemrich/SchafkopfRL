@@ -42,7 +42,7 @@ The <b>action space</b> is a 41d vector that contains
 <img src="documentation/network.jpg">
 
 ### Results
-Playing against other players with 20/50 tariffs:
+Playing against other players with 20/50 tariffs (+10 for each "Laufenden" when more than 3):
 - Random-Coward: Selects game randomly, but no solo game. Selects cards randomly.
 - Rule-Based: Selects solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
 
@@ -66,6 +66,9 @@ Playing against other players with 20/50 tariffs:
         <td>8.5</td>
     </tr>
 </table>
+
+Example training run output of tensorflow
+<img src="documentation/example_run.png">
 
 ## Resources
 - PPO Paper: https://arxiv.org/abs/1707.06347

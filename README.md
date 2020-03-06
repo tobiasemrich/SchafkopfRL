@@ -11,10 +11,10 @@ The current focus of this project is to develop an AI that is able to play the b
 
 ## Documentation
 
-### Class Overview
+<!--### Class Overview
 Find the most imporatant classes for the training process below.
 
-<img src="documentation/class_diagram.jpg">
+<img src="documentation/class_diagram.jpg">-->
 
 ### State and Action Space
 

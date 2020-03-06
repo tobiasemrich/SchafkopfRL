@@ -10,6 +10,12 @@ There are a lot of different variations (allowed game types, allowed doubling me
 The current focus of this project is to develop an AI that is able to play the basic game types Sauspiel, Farbsolo and Wenz (doubles like "Spritzen" and "Legen" will be added later) 
 
 ## Documentation
+### Basic Principle
+
+1. The policy neural network (that decides what action to take at any given game state) is randomly initialized.
+2. N games are played by 4 players using the current policy (N = 50K-100K)
+3. A new policy is trained trying to make good decision more likely and bad decisions less likely using PPO
+4. Replace the current policy by the new one and go back to 2.
 
 <!--### Class Overview
 Find the most imporatant classes for the training process below.
@@ -38,7 +44,7 @@ The <b>action space</b> is a 41d vector that contains
 - game type selection (9)
 - card selection (32)
 
-### Policy Network
+### LSTM-Based Policy Network
 <img src="documentation/network.jpg">
 
 ### Results

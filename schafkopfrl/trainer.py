@@ -21,7 +21,7 @@ def main():
   ############## Hyperparameters ##############
 
   update_games = 10000  # update policy every n games
-  batch_size = update_games * 9  # 5000
+  batch_size = update_games *2 # 5000
 
   eval_games = 500
   checkpoint_folder = "../policies"

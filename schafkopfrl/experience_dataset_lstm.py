@@ -33,7 +33,7 @@ def custom_collate(batch):
     states.append(torch.stack(transposed_states[0]).detach())
 
     for i in range(2):
-        sequences = [torch.squeeze(seq[0], dim=1).detach() for seq in transposed_states[1+i]]
+        sequences = [torch.squeeze(seq, dim=1).detach() for seq in transposed_states[1+i]]
         seq_lengths = [len(x) for x in sequences]
         # pad the seq_batch
         padded_seq_batch = torch.nn.utils.rnn.pad_sequence(sequences)

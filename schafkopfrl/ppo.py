@@ -9,23 +9,17 @@ from torch.optim.lr_scheduler import  StepLR
 from torch.utils import data
 from torch.utils.tensorboard import SummaryWriter
 from schafkopfrl import experience_dataset_linear, experience_dataset_lstm
-from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM, custom_collate
+from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM
 from schafkopfrl.experience_dataset_linear import ExperienceDatasetLinear
-from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
-from schafkopfrl.models.actor_critic_linear import ActorCriticNetworkLinear
-from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.rl_player import RlPlayer
-from schafkopfrl.players.rule_based_player import RuleBasedPlayer
 from schafkopfrl.schafkopf_game import SchafkopfGame
-
-from tensorboard import program
 
 import logging
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PPO:
-    def __init__(self, policy, lr_params, betas, gamma, K_epochs, eps_clip, batch_size, c1=0.5, c2=0.01, start_episode = -1):
+    def __init__(self, policy, lr_params, betas, gamma, K_epochs, eps_clip, batch_size, mini_batch_size, c1=0.5, c2=0.01, start_episode = -1):
         [self.lr, self.lr_stepsize, self.lr_gamma] = lr_params
 
         self.betas = betas
@@ -34,6 +28,10 @@ class PPO:
         self.K_epochs = K_epochs
 
         self.batch_size= batch_size
+        self.mini_batch_size = mini_batch_size
+
+        if batch_size % mini_batch_size != 0:
+            raise Exception("batch_size needs to be a multiple of mini_batch_size")
 
         self.c1 = c1
         self.c2 = c2
@@ -96,7 +94,7 @@ class PPO:
                                                      memory.logprobs, rewards)
 
         #training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_linear.custom_collate, batch_size=self.batch_size, shuffle=True)
-        training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_lstm.custom_collate, batch_size=self.batch_size, shuffle=True)
+        training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_lstm.custom_collate, batch_size=self.mini_batch_size, shuffle=True)
 
         #try:
         #    torch.multiprocessing.set_start_method('fork', force=True)
@@ -111,8 +109,12 @@ class PPO:
         avg_approx_kl_divergence = 0
         avg_explained_var = 0
         count = 0
-        for epoch in range(self.K_epochs):
-            for old_states, old_actions, old_allowed_actions, old_logprobs, old_rewards in training_generator:
+        for epoch in range(self.K_epochs): #epoch
+
+            mini_batches_in_batch = int(self.batch_size / self.mini_batch_size)
+            self.optimizer.zero_grad()
+
+            for i, (old_states, old_actions, old_allowed_actions, old_logprobs, old_rewards) in enumerate(training_generator): # mini batch
 
                 # Transfer to GPU
                 old_states = [old_state.to(device) for old_state in old_states]
@@ -147,9 +149,15 @@ class PPO:
                 count+=1
 
                 # take gradient step
-                self.optimizer.zero_grad()
+                #self.optimizer.zero_grad()
+                #loss.mean().backward()
+                #self.optimizer.step()
+
                 loss.mean().backward()
-                self.optimizer.step()
+
+                if (i + 1) % mini_batches_in_batch == 0:
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
@@ -160,37 +168,3 @@ class PPO:
         self.writer.add_scalar('Loss/ppo_clipping_fraction', avg_clip_fraction/count, i_episode)
         self.writer.add_scalar('Loss/approx_kl_divergence', avg_approx_kl_divergence / count, i_episode)
         self.writer.add_scalar('Loss/avg_explained_var', avg_explained_var / count, i_episode)
-
-def play_against_old_checkpoints(checkpoint_folder, model_class, every_n_checkpoint, runs, summary_writer):
-    generations = [int(f[:8]) for f in listdir(checkpoint_folder) if f.endswith(".pt")]
-    generations.sort()
-    if len(generations) > 1:
-        max_gen = max(generations)
-        for i in generations:
-            if i != max_gen and i%every_n_checkpoint==0:
-                policy_old = model_class()
-                policy_old.to(device=device)
-                policy_old.load_state_dict(torch.load(checkpoint_folder + "/" + str(i).zfill(8) + ".pt"))
-
-                policy_new = model_class()
-                policy_new.to(device=device)
-                policy_new.load_state_dict(torch.load(checkpoint_folder + "/" + str(max_gen).zfill(8) + ".pt"))
-
-                gs = SchafkopfGame(RlPlayer(0, policy_old), RlPlayer(1, policy_new), RlPlayer(2, policy_old), RlPlayer(3,policy_new), 1)
-                all_rewards = np.array([0., 0., 0., 0.])
-                for j in range(runs):
-                    game_state = gs.play_one_game()
-                    rewards = np.array(game_state.get_rewards())
-                    all_rewards += rewards
-
-                gs = SchafkopfGame(RlPlayer(0, policy_new), RlPlayer(1, policy_old), RlPlayer(2, policy_new), RlPlayer(3,policy_old), 1)
-                all_rewards = all_rewards[[1, 0, 3, 2]]
-                for j in range(runs):
-                    game_state = gs.play_one_game()
-                    #gs.print_game(game_state)
-                    rewards = np.array(game_state.get_rewards())
-                    all_rewards += rewards
-
-
-                print(str(max_gen) + " vs " + str(i) + " = "+ str(all_rewards[0] + all_rewards[2]) + ":"+ str(all_rewards[1] + all_rewards[3]) +"\n")
-                summary_writer.add_scalar('Evaluation/generation_'+str(max_gen), (all_rewards[0] + all_rewards[2])/(4*runs), i)

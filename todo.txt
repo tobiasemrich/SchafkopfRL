@@ -14,8 +14,8 @@ Missing Functions
     * davonlaufen: werden die teams gesetzt?
 
 Things I added that I don't like
-    * points add to rewards
-    * hard coded solos and wenz (really good cards)
+    * Reward Shaping: trick points are added to reward
+    * Action Selection: hard coded solos and wenz (when player has a lot of trumps)
 
 Questions
     * warum brauchts 2 policies in ppo? eigentlich wird immer nur eine her genommen
@@ -44,7 +44,7 @@ Questions
     + hard code more wenz ----> did that
     + player_plays_card: add probability of playing that card and show it in print game
     + loss shown in tensorboard is dependent on learning rate currently, this should be changed
-    * add batchnorm (faster training?)
+    * add batchnorm (faster training?) --> not good for RL
     * use gru instead of LSTM
     * current trick encoding: one lstm layer should be enough
 

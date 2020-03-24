@@ -20,20 +20,21 @@ def main():
 
   ############## Hyperparameters ##############
 
-  update_games = 20000  # update policy every n games
-  batch_size = update_games * 9
+  update_games = 50000  # update policy every n games
+  batch_size = update_games * 6
   mini_batch_size =20000 # make this as large as possible to fit in gpu
 
   eval_games = 500
   checkpoint_folder = "../policies"
 
-  lr = 0.002
+  #lr = 0.0002
+  lr = 0.0006
   lr_stepsize = 30000000 #300000
   lr_gamma = 0.3
 
   betas = (0.9, 0.999)
   gamma = 0.99  # discount factor
-  K_epochs = 8 #8  # update policy for K epochs
+  K_epochs = 16 #8  # update policy for K epochs
   eps_clip = 0.2  # clip parameter for PPO
   c1, c2 = 0.5, 0.005#0.001
   random_seed = None #<---------------------------------------------------------------- set to None

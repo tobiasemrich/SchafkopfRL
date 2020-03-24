@@ -1,6 +1,3 @@
-import time
-from os import listdir
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,8 +8,6 @@ from torch.utils.tensorboard import SummaryWriter
 from schafkopfrl import experience_dataset_linear, experience_dataset_lstm
 from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM
 from schafkopfrl.experience_dataset_linear import ExperienceDatasetLinear
-from schafkopfrl.players.rl_player import RlPlayer
-from schafkopfrl.schafkopf_game import SchafkopfGame
 
 import logging
 
@@ -58,15 +53,7 @@ class PPO:
 
     def update(self, memory, i_episode):
 
-        #alpha = 1-i_episode/900000
-
         self.policy.train()
-
-        #alpha = 1
-        #decay learning rate and eps_clip
-        #for g in self.optimizer.param_groups:
-        #    g['lr'] = self.lr * alpha
-        adapted_eps_clip = self.eps_clip
 
         # Monte Carlo estimate of state rewards:
         rewards = []
@@ -96,10 +83,6 @@ class PPO:
         #training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_linear.custom_collate, batch_size=self.batch_size, shuffle=True)
         training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_lstm.custom_collate, batch_size=self.mini_batch_size, shuffle=True)
 
-        #try:
-        #    torch.multiprocessing.set_start_method('fork', force=True)
-        #except RuntimeError:
-        #    pass
 
         # Optimize policy for K epochs:
         avg_loss = 0
@@ -130,11 +113,11 @@ class PPO:
                 # Finding Surrogate Loss:
                 advantages = old_rewards.detach() - state_values.detach()
                 surr1 = ratios * advantages
-                surr2 = torch.clamp(ratios, 1 - adapted_eps_clip, 1 + adapted_eps_clip) * advantages
+                surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
                 value_loss = self.MseLoss(state_values, old_rewards)
                 loss = -torch.min(surr1, surr2) + self.c1 * value_loss - self.c2 * dist_entropy
 
-                clip_fraction = (abs(ratios - 1.0) > adapted_eps_clip).type(torch.FloatTensor).mean()
+                clip_fraction = (abs(ratios - 1.0) > self.eps_clip).type(torch.FloatTensor).mean()
                 approx_kl_divergence = .5 * ((logprobs - old_logprobs.detach()) ** 2).mean()
                 explained_var = 1-torch.var(old_rewards - state_values) / torch.var(old_rewards)
 
@@ -147,11 +130,6 @@ class PPO:
                 avg_approx_kl_divergence += approx_kl_divergence.item()
                 avg_explained_var += explained_var.mean().item()
                 count+=1
-
-                # take gradient step
-                #self.optimizer.zero_grad()
-                #loss.mean().backward()
-                #self.optimizer.step()
 
                 loss.mean().backward()
 

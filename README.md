@@ -31,7 +31,7 @@ The <b>state space </b> consists of three parts (necessary bits in brackets):
   - game_player (4)
   - first_player (4)
   - current_scores (4) [divided by 120 for normalization purpose]
-  - remaining cards (32) [one hot encoded]
+  - remaining ego-player cards (32) [one hot encoded]
   - teams (4) [bits of players are set to 1, if Suchsau has been played already]
 - game_history_sequence (x * 16)
     - course_of_game: x * (12 + 4) each played card in order plus the player that played it

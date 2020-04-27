@@ -21,6 +21,10 @@ class Player(ABC):
         pass
 
     @abstractmethod
+    def contra_retour(self, game_state):
+        pass
+
+    @abstractmethod
     def select_card(self, game_state):
         pass
 

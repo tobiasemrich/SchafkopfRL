@@ -27,7 +27,15 @@ class Memory:
         self.is_terminals.extend(memory.is_terminals)
 
     def __str__(self):
-        out = ""
-        for s in self.states:
-            out += np.array2string((s.cpu().numpy()), separator=', ', max_line_width=10000) + "\n"
+        out = "----------- states ------------------\n"
+        for counter, s in enumerate(self.states):
+            out += "----------- state "+str(counter)+"\n"
+            if type(s) == list:
+                for c in s:
+                    out += np.array2string((c.cpu().numpy()), separator=', ', max_line_width=10000) + "\n"
+            else:
+                out += np.array2string((s.cpu().numpy()), separator=', ', max_line_width=10000) + "\n"
+
+        out += "----------- rewards ------------------\n"
+        out += str(self.rewards)
         return out

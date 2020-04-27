@@ -21,7 +21,8 @@ class RandomPlayer(Player):
 
     return selected_game, 1
 
-
+  def contra_retour(self, game_state):
+    return False, 1
 
   def select_card(self, game_state):
 

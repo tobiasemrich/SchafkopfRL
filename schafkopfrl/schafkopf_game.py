@@ -34,6 +34,7 @@ class SchafkopfGame:
         # some logging counts
         self.game_count = [0, 0, 0, 0]  # weiter, sauspiel, wenz, solo
         self.won_game_count = [0, 0, 0, 0]
+        self.contra_retour = [0, 0]
 
     def play_one_game(self):
         """
@@ -55,6 +56,7 @@ class SchafkopfGame:
             self.players[p].take_cards(self.rules.cards[8 * p:8 * (p + 1)])
 
         # every player beginning with the one left of the dealer calls his game
+        game_state.game_stage = GameState.BIDDING
         current_highest_game = [None, None]
         game_player = None
         for p in range(4):
@@ -69,6 +71,27 @@ class SchafkopfGame:
         game_state.game_player = game_player
         game_state.game_type = current_highest_game
 
+        # gegenspieler can now double the game
+        game_state.game_stage = GameState.CONTRA
+        for p in range(4):
+            current_player_id = (game_state.first_player + p) % 4
+            current_player = self.players[current_player_id]
+            contra, prob = current_player.contra_retour(game_state)
+            game_state.action_probabilities[1][current_player_id] = prob
+            if contra:
+                game_state.contra_retour.append(current_player_id)
+
+        game_state.game_stage = GameState.RETOUR
+        for p in range(4):
+            current_player_id = (game_state.first_player + p) % 4
+            current_player = self.players[current_player_id]
+            retour, prob = current_player.contra_retour(game_state)
+            game_state.action_probabilities[2][current_player_id] = prob
+            if retour:
+                game_state.contra_retour.append(current_player_id)
+
+        # trick phase
+        game_state.game_stage = GameState.TRICK
         if game_state.game_type != [None, None]:
             # then play the game
             first_player_of_trick = game_state.first_player
@@ -138,6 +161,13 @@ class SchafkopfGame:
         else:
             played_game_str += "no game "
         print(played_game_str + "played by player: " + str(game_state.game_player) + "\n")
+        contra_str = "Contra/Retour: "
+        for i in range(len(game_state.contra_retour)):
+            player = game_state.contra_retour[i]
+            contra_str += "player "+str(player)
+            contra_str += "[{:0.3f}]".format(game_state.action_probabilities[i + 1][player])
+            contra_str += "  |   "
+        print(contra_str + "\n")
 
         if game_state.game_type[1] != None:
             print("Course of game")
@@ -159,7 +189,7 @@ class SchafkopfGame:
                     trick_str_ += self.rules.card_color[game_state.course_of_game_playerwise[trick][player][0]] + " " + \
                                   self.rules.card_number[game_state.course_of_game_playerwise[trick][player][1]]
 
-                    trick_str_ += "[{:0.3f}]".format(game_state.action_probabilities[trick+1][player])
+                    trick_str_ += "[{:0.3f}]".format(game_state.action_probabilities[trick+3][player])
                     if game_state.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
                             game_state.game_type):
                         trick_str_ += '\033[0m'
@@ -179,6 +209,10 @@ class SchafkopfGame:
             self.game_count[game_state.game_type[1] + 1] += 1
             if game_state.get_rewards()[game_state.game_player] > 0:
                 self.won_game_count[game_state.game_type[1] + 1] += 1
+            if len(game_state.contra_retour) >= 1:
+                self.contra_retour[0] += 1
+            if len(game_state.contra_retour) == 2:
+                self.contra_retour[1] += 1
 
 
 def main():

@@ -40,7 +40,7 @@ class Rules:
         self.winning_thresholds = [0, 30, 60, 90, 119]
 
         self.reward_laufende = 10
-        self.min_laufende = [3, 2, 3]  # sauspiel, solo, wenz
+        self.min_laufende = [3, 2, 3]  # sauspiel, wenz, solo
 
     def higher_card(self, game_type, card1, card2):
         """

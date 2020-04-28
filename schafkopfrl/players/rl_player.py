@@ -79,12 +79,12 @@ class RlPlayer(Player):
     if len(game_state.contra_retour) == 0 and game_state.game_stage == GameState.CONTRA: #contra check
       allowed = np.array([1, 1])
       # not allowed if you are the player or the team mate of the player
-      if game_state.game_player == self.id or (game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] not in self.cards)):
+      if game_state.game_player == self.id or (game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in self.cards)):
         allowed = np.array([0, 1])
     elif len(game_state.contra_retour) == 1 and game_state.game_stage == GameState.RETOUR: #retour check
       allowed = np.array([0, 1])
       # allowed if you are the player or the team mate of the player
-      if game_state.game_player == self.id or (game_state.game_type[1] == 0 and [game_state.game_type[0], 7] not in self.cards):
+      if game_state.game_player == self.id or (game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in self.cards):
         allowed = np.array([1, 1])
 
     action, prob = self.act(

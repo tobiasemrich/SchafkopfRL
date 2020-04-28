@@ -96,14 +96,14 @@ class RlPlayer(Player):
     rewards = steps_per_game*[0.]
 
     # REWARD SHAPING: reward for each action = number of points made/lost
-    for i in range(steps_per_game-1):
-      points = game_state.count_points(i)
-      if game_state.trick_owner[i] == self.id:
-        rewards[i+1] += points/5
-      elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
-        rewards[i + 1] += points/5
-      else:
-        rewards[i + 1] -= points/5
+    #for i in range(steps_per_game-1):
+    #  points = game_state.count_points(i)
+    #  if game_state.trick_owner[i] == self.id:
+    #    rewards[i+1] += points/5
+    #  elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
+    #    rewards[i + 1] += points/5
+    #  else:
+    #    rewards[i + 1] -= points/5
 
     rewards[-1] += reward
     self.memory.rewards += rewards

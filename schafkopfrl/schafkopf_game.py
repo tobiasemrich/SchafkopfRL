@@ -71,29 +71,29 @@ class SchafkopfGame:
         game_state.game_player = game_player
         game_state.game_type = current_highest_game
 
-        # gegenspieler can now double the game
-        game_state.game_stage = GameState.CONTRA
-        for p in range(4):
-            current_player_id = (game_state.first_player + p) % 4
-            current_player = self.players[current_player_id]
-            contra, prob = current_player.contra_retour(game_state)
-            game_state.action_probabilities[1][current_player_id] = prob
-            if contra:
-                game_state.contra_retour.append(current_player_id)
-
-        game_state.game_stage = GameState.RETOUR
-        for p in range(4):
-            current_player_id = (game_state.first_player + p) % 4
-            current_player = self.players[current_player_id]
-            retour, prob = current_player.contra_retour(game_state)
-            game_state.action_probabilities[2][current_player_id] = prob
-            if retour:
-                game_state.contra_retour.append(current_player_id)
-
-        # trick phase
-        game_state.game_stage = GameState.TRICK
+        # play the game if someone is playing
         if game_state.game_type != [None, None]:
-            # then play the game
+            # gegenspieler can now double the game
+            game_state.game_stage = GameState.CONTRA
+            for p in range(4):
+                current_player_id = (game_state.first_player + p) % 4
+                current_player = self.players[current_player_id]
+                contra, prob = current_player.contra_retour(game_state)
+                game_state.action_probabilities[1][current_player_id] = prob
+                if contra:
+                    game_state.contra_retour.append(current_player_id)
+
+            game_state.game_stage = GameState.RETOUR
+            for p in range(4):
+                current_player_id = (game_state.first_player + p) % 4
+                current_player = self.players[current_player_id]
+                retour, prob = current_player.contra_retour(game_state)
+                game_state.action_probabilities[2][current_player_id] = prob
+                if retour:
+                    game_state.contra_retour.append(current_player_id)
+
+            # trick phase
+            game_state.game_stage = GameState.TRICK
             first_player_of_trick = game_state.first_player
             for trick_number in range(8):
                 game_state.trick_number = trick_number

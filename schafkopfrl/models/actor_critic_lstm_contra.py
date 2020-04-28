@@ -108,7 +108,7 @@ class ActorCriticNetworkLSTMContra(nn.Module):
         elif game_state.game_stage == GameState.RETOUR:
             game_stage[2] = 1
         else:
-            game_stage[2+game_state.trick_number] = 1
+            game_stage[3+game_state.trick_number] = 1
 
 
         game_enc = two_hot_encode_game(game_state.game_type)

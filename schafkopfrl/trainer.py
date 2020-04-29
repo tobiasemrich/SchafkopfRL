@@ -29,7 +29,7 @@ def main():
   checkpoint_folder = "../policies"
 
   #lr = 0.0002
-  lr = 0.0006
+  lr = 0.001
   lr_stepsize = 30000000 #300000
   lr_gamma = 0.3
 
@@ -102,7 +102,7 @@ def main():
     ppo.writer.add_scalar('Game_Statistics/winning_prob_wenz', np.divide(gs.won_game_count[2],gs.game_count[2]), i_episode)
     ppo.writer.add_scalar('Game_Statistics/winning_prob_solo', np.divide(gs.won_game_count[3],gs.game_count[3]), i_episode)
 
-    ppo.writer.add_scalar('Game_Statistics/contra_prob', np.divide(gs.contra_retour[0], gs.game_count[3]),
+    ppo.writer.add_scalar('Game_Statistics/contra_prob', np.divide(gs.contra_retour[0], update_games),
                           i_episode)
 
     # reset memories and replace policy

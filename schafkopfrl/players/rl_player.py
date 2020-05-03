@@ -1,3 +1,4 @@
+from schafkopfrl.gamestate import GameState
 from schafkopfrl.players.player import Player
 from schafkopfrl.rules import Rules
 import numpy as np
@@ -65,20 +66,45 @@ class RlPlayer(Player):
 
     action, prob = self.act(
       self.policy.preprocess(game_state, self),
-      torch.tensor(np.append(one_hot_games(allowed_games), np.zeros(32))).float())
+      torch.tensor(np.concatenate((one_hot_games(allowed_games), np.zeros(2), np.zeros(32)))).float())
 
     selected_game = self.rules.games[action]
 
     return selected_game, prob
+
+  def contra_retour(self, game_state):
+    #check if it is allowed to contra or retour
+    allowed = np.array([0, 1])
+
+    if len(game_state.contra_retour) == 0 and game_state.game_stage == GameState.CONTRA: #contra check
+      allowed = np.array([1, 1])
+      # not allowed if you are the player or the team mate of the player
+      if game_state.game_player == self.id or (game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in self.cards)):
+        allowed = np.array([0, 1])
+    elif len(game_state.contra_retour) == 1 and game_state.game_stage == GameState.RETOUR: #retour check
+      allowed = np.array([0, 1])
+      # allowed if you are the player or the team mate of the player
+      if game_state.game_player == self.id or (game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in self.cards):
+        allowed = np.array([1, 1])
+
+    action, prob = self.act(
+      self.policy.preprocess(game_state, self),
+      torch.tensor(np.concatenate((np.zeros(9), allowed, np.zeros(32)))).float())
+
+    if action-9 == 0:
+      return True, prob
+    else:
+      return False, prob
+
 
 
 
   def select_card(self, game_state):
     action, prob = self.act(
       self.policy.preprocess(game_state, self),
-      torch.tensor(np.append(np.zeros(9), one_hot_cards(self.rules.allowed_cards(game_state, self)))).float())
+      torch.tensor(np.concatenate((np.zeros(9),np.zeros(2), one_hot_cards(self.rules.allowed_cards(game_state, self))))).float())
 
-    selected_card = self.rules.cards[action - 9]
+    selected_card = self.rules.cards[action - 11]
 
     self.cards.remove(selected_card)
     #Davonlaufen needs to be tracked
@@ -90,20 +116,20 @@ class RlPlayer(Player):
     return selected_card, prob
 
   def retrieve_reward(self, reward, game_state):
-    steps_per_game = 9
+    steps_per_game = 11
     if game_state.game_type == [None, None]:
       steps_per_game=1
     rewards = steps_per_game*[0.]
 
     # REWARD SHAPING: reward for each action = number of points made/lost
-    #for i in range(steps_per_game-1):
-    #  points = game_state.count_points(i)
-    #  if game_state.trick_owner[i] == self.id:
-    #    rewards[i+1] += points/5
-    #  elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
-    #    rewards[i + 1] += points/5
-    #  else:
-    #    rewards[i + 1] -= points/5
+    '''for i in range(steps_per_game-1):
+      points = game_state.count_points(i)
+      if game_state.trick_owner[i] == self.id:
+        rewards[i+1] += points/5
+      elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
+        rewards[i + 1] += points/5
+      else:
+        rewards[i + 1] -= points/5'''
 
     rewards[-1] += reward
     self.memory.rewards += rewards

@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from schafkopfrl.models.actor_critic_linear import ActorCriticNetworkLinear
 from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
+from schafkopfrl.models.actor_critic_lstm_contra import ActorCriticNetworkLSTMContra
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.random_player import RandomPlayer
 from schafkopfrl.players.rl_player import RlPlayer
@@ -22,13 +23,13 @@ def main():
 
   update_games = 50000  # update policy every n games
   batch_size = update_games * 6
-  mini_batch_size =20000 # make this as large as possible to fit in gpu
+  mini_batch_size = 20000 # make this as large as possible to fit in gpu
 
   eval_games = 500
   checkpoint_folder = "../policies"
 
   #lr = 0.0002
-  lr = 0.0006
+  lr = 0.001
   lr_stepsize = 30000000 #300000
   lr_gamma = 0.3
 
@@ -43,7 +44,7 @@ def main():
   print("Cuda available: "+str(torch.cuda.is_available()))
 
   #model = ActorCriticNetworkLinear
-  model = ActorCriticNetworkLSTM
+  model = ActorCriticNetworkLSTMContra
 
   #start tensorboard
   tb = program.TensorBoard()
@@ -100,6 +101,9 @@ def main():
     ppo.writer.add_scalar('Game_Statistics/winning_prob_sauspiel', np.divide(gs.won_game_count[1], gs.game_count[1]), i_episode)
     ppo.writer.add_scalar('Game_Statistics/winning_prob_wenz', np.divide(gs.won_game_count[2],gs.game_count[2]), i_episode)
     ppo.writer.add_scalar('Game_Statistics/winning_prob_solo', np.divide(gs.won_game_count[3],gs.game_count[3]), i_episode)
+
+    ppo.writer.add_scalar('Game_Statistics/contra_prob', np.divide(gs.contra_retour[0], update_games),
+                          i_episode)
 
     # reset memories and replace policy
     gs = SchafkopfGame(RlPlayer(0, ppo.policy_old), RlPlayer(1, ppo.policy_old), RlPlayer(2, ppo.policy_old), RlPlayer(3, ppo.policy_old), random_seed)

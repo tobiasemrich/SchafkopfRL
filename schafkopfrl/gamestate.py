@@ -4,6 +4,13 @@ from schafkopfrl.rules import Rules
 
 
 class GameState:
+
+    # phases of the game
+    BIDDING = 1
+    CONTRA = 2
+    RETOUR = 3
+    TRICK = 4
+
     """
     The GameState contains all public visible game information like dealer, game_type, game_player, course_of_game, current_scores ...
     """
@@ -18,8 +25,13 @@ class GameState:
         self.trick_number = 0
         self.played_cards = 0
 
+        self.game_stage = None
+
         # who wants to play what
         self.bidding_round = [[None, None] for x in range(4)]
+
+        # who doubled the game (kontra / retour)
+        self.contra_retour = []
 
         # cards ordered by players
         self.course_of_game_playerwise = [[[None, None] for x in range(4)] for y in range(8)]
@@ -33,12 +45,12 @@ class GameState:
         self.scores = [0, 0, 0, 0]
 
         #for debugging purposes remember probs for picking an action
-        self.action_probabilities=[[[None, None] for x in range(4)] for y in range(9)]
+        self.action_probabilities=[[[None, None] for x in range(4)] for y in range(11)]
 
     def player_plays_card(self, player_id, card, prob):
         self.course_of_game_playerwise[self.trick_number][player_id] = card
         self.course_of_game[self.trick_number][self.played_cards % 4] = card
-        self.action_probabilities[self.trick_number+1][player_id] = prob
+        self.action_probabilities[self.trick_number+3][player_id] = prob
         self.played_cards += 1
 
         if self.played_cards % 4 == 0:  # trick complete
@@ -114,6 +126,9 @@ class GameState:
                     break
         if laufende >= self.rules.min_laufende[self.game_type[1]]:
             reward += laufende * self.rules.reward_laufende
+
+        # contra/retour doubles
+        reward *= 2**len(self.contra_retour)
 
         # calculate reward distribution
         if player_team_points <= self.rules.winning_thresholds[2]:

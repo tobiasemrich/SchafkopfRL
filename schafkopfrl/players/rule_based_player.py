@@ -76,7 +76,12 @@ class RuleBasedPlayer(Player):
 
     return [None, None], 1
 
-
+  def contra_retour(self, game_state):
+    trumps = [card for card in self.rules.get_sorted_trumps([0, 0]) if card in self.cards]
+    if len(trumps) >= 6:
+      return True, 1
+    else:
+      return False, 1
 
   def select_card(self, game_state):
     allowed_cards = self.rules.allowed_cards(game_state, self)

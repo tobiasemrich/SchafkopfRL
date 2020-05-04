@@ -173,7 +173,7 @@ class Rules:
                     else:
                         allowed_cards = player.cards.copy()
             # TODO: check if this works correctly remove rufsau if not gesucht and not davongelaufen and not last trick
-            if rufsau in allowed_cards and not (first_card[0] == rufsau[0] or player.davongelaufen or game_state.trick_number == 7):
+            if game_state.game_type[1] == 0 and rufsau in allowed_cards and not (first_card[0] == rufsau[0] or player.davongelaufen or game_state.trick_number == 7):
                 allowed_cards.remove(rufsau)
 
         return allowed_cards

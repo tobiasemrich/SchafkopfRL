@@ -1,3 +1,6 @@
+from gamestate import GameState
+
+
 class Rules:
     """
     The Rules class contains all the rules necessary to play a game of Schafkopf. Is used by players to check for allowed games and allowed cards
@@ -177,3 +180,28 @@ class Rules:
                 allowed_cards.remove(rufsau)
 
         return allowed_cards
+
+    def allowed_contra_retour(self, game_state, player):
+        """
+        returns if it is allowed for the player to double the game at the current point in the game
+
+        :param game_state: current game state
+        :param player: the player who wants to double
+        :return: true if it is possible to double otherwise false
+        """
+        allowed = False
+
+        if len(game_state.contra_retour) == 0 and game_state.game_stage == GameState.CONTRA:  # contra check
+            allowed = True
+            # not allowed if you are the player or the team mate of the player
+            if game_state.game_player == self.id or (
+                    game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in self.cards)):
+                allowed = False
+        elif len(game_state.contra_retour) == 1 and game_state.game_stage == GameState.RETOUR:  # retour check
+            allowed = False
+            # allowed if you are the player or the team mate of the player
+            if game_state.game_player == self.id or (
+                    game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in self.cards):
+                allowed = True
+
+        return allowed

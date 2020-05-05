@@ -1,5 +1,5 @@
 import time
-from os import listdir
+from os import listdir, path
 
 import numpy as np
 import torch
@@ -48,7 +48,8 @@ def main():
 
   #start tensorboard
   tb = program.TensorBoard()
-  tb.configure(argv=[None, '--logdir', "../runs"])
+  runs_folder = path.abspath(path.join(path.dirname(__file__), '..', 'runs'))
+  tb.configure(argv=[None, '--logdir', runs_folder])
   tb.launch()
 
   # creating environment

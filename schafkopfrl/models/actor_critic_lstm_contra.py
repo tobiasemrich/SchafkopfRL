@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.distributions import Categorical
 
-from schafkopfrl.gamestate import GameState
+from rules import Rules
 from schafkopfrl.utils import two_hot_encode_game, one_hot_cards
 from schafkopfrl.utils import two_hot_encode_card
 
@@ -101,11 +101,11 @@ class ActorCriticNetworkLSTMContra(nn.Module):
 
         #game stage
         game_stage = np.zeros(11)
-        if game_state.game_stage == GameState.BIDDING:
+        if game_state.game_stage == Rules.BIDDING:
             game_stage[0] = 1
-        elif game_state.game_stage == GameState.CONTRA:
+        elif game_state.game_stage == Rules.CONTRA:
             game_stage[1] = 1
-        elif game_state.game_stage == GameState.RETOUR:
+        elif game_state.game_stage == Rules.RETOUR:
             game_stage[2] = 1
         else:
             game_stage[3+game_state.trick_number] = 1

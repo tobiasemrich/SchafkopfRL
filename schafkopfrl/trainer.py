@@ -3,9 +3,8 @@ from os import listdir, path
 
 import numpy as np
 import torch
-from schafkopfrl.models.actor_critic_linear import ActorCriticNetworkLinear
-from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
-from schafkopfrl.models.actor_critic_lstm_contra import ActorCriticNetworkLSTMContra
+
+from models.actor_critic_linear_contra import ActorCriticNetworkLinearContra
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.random_player import RandomPlayer
 from schafkopfrl.players.rl_player import RlPlayer
@@ -21,9 +20,9 @@ def main():
 
   ############## Hyperparameters ##############
 
-  update_games = 50000  # update policy every n games
+  update_games = 1000  # update policy every n games
   batch_size = update_games * 6
-  mini_batch_size = 20000 # make this as large as possible to fit in gpu
+  mini_batch_size = 1000 # make this as large as possible to fit in gpu
 
   eval_games = 500
   checkpoint_folder = "../policies"
@@ -43,8 +42,8 @@ def main():
 
   print("Cuda available: "+str(torch.cuda.is_available()))
 
-  #model = ActorCriticNetworkLinear
-  model = ActorCriticNetworkLSTMContra
+  #model = ActorCriticNetworkLSTMContra
+  model = ActorCriticNetworkLinearContra
 
   #start tensorboard
   tb = program.TensorBoard()

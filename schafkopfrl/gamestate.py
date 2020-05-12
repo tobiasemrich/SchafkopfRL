@@ -5,12 +5,6 @@ from schafkopfrl.rules import Rules
 
 class GameState:
 
-    # phases of the game
-    BIDDING = 1
-    CONTRA = 2
-    RETOUR = 3
-    TRICK = 4
-
     """
     The GameState contains all public visible game information like dealer, game_type, game_player, course_of_game, current_scores ...
     """

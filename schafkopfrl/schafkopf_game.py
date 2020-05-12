@@ -6,8 +6,6 @@ import torch
 
 from schafkopfrl.gamestate import GameState
 from schafkopfrl.memory import Memory
-from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
-from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.rl_player import RlPlayer
 from schafkopfrl.players.rule_based_player import RuleBasedPlayer
 from schafkopfrl.rules import Rules
@@ -56,7 +54,7 @@ class SchafkopfGame:
             self.players[p].take_cards(self.rules.cards[8 * p:8 * (p + 1)])
 
         # every player beginning with the one left of the dealer calls his game
-        game_state.game_stage = GameState.BIDDING
+        game_state.game_stage = Rules.BIDDING
         current_highest_game = [None, None]
         game_player = None
         for p in range(4):
@@ -74,7 +72,7 @@ class SchafkopfGame:
         # play the game if someone is playing
         if game_state.game_type != [None, None]:
             # gegenspieler can now double the game
-            game_state.game_stage = GameState.CONTRA
+            game_state.game_stage = Rules.CONTRA
             for p in range(4):
                 current_player_id = (game_state.first_player + p) % 4
                 current_player = self.players[current_player_id]
@@ -83,7 +81,7 @@ class SchafkopfGame:
                 if contra:
                     game_state.contra_retour.append(current_player_id)
 
-            game_state.game_stage = GameState.RETOUR
+            game_state.game_stage = Rules.RETOUR
             for p in range(4):
                 current_player_id = (game_state.first_player + p) % 4
                 current_player = self.players[current_player_id]
@@ -93,7 +91,7 @@ class SchafkopfGame:
                     game_state.contra_retour.append(current_player_id)
 
             # trick phase
-            game_state.game_stage = GameState.TRICK
+            game_state.game_stage = Rules.TRICK
             first_player_of_trick = game_state.first_player
             for trick_number in range(8):
                 game_state.trick_number = trick_number

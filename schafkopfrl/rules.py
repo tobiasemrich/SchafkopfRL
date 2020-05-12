@@ -1,10 +1,13 @@
-from gamestate import GameState
-
 
 class Rules:
     """
     The Rules class contains all the rules necessary to play a game of Schafkopf. Is used by players to check for allowed games and allowed cards
   """
+    # phases of the game
+    BIDDING = 1
+    CONTRA = 2
+    RETOUR = 3
+    TRICK = 4
 
     def __init__(self):
         self.card_number = ['siebener',
@@ -191,17 +194,17 @@ class Rules:
         """
         allowed = False
 
-        if len(game_state.contra_retour) == 0 and game_state.game_stage == GameState.CONTRA:  # contra check
+        if len(game_state.contra_retour) == 0 and game_state.game_stage == Rules.CONTRA:  # contra check
             allowed = True
             # not allowed if you are the player or the team mate of the player
-            if game_state.game_player == self.id or (
-                    game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in self.cards)):
+            if game_state.game_player == player.id or (
+                    game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in player.cards)):
                 allowed = False
-        elif len(game_state.contra_retour) == 1 and game_state.game_stage == GameState.RETOUR:  # retour check
+        elif len(game_state.contra_retour) == 1 and game_state.game_stage == Rules.RETOUR:  # retour check
             allowed = False
             # allowed if you are the player or the team mate of the player
-            if game_state.game_player == self.id or (
-                    game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in self.cards):
+            if game_state.game_player == player.id or (
+                    game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in player.cards):
                 allowed = True
 
         return allowed

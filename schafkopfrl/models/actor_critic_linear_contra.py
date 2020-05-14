@@ -34,7 +34,8 @@ class ActorCriticNetworkLinearContra(nn.Module):
         self.fc4a = nn.Linear(self.hidden_neurons, 43)
         self.fc4b = nn.Linear(self.hidden_neurons, 1)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        from schafkopfrl.settings import Settings
+        self.device = Settings.device
 
 
     def forward(self, state_vector, allowed_actions):

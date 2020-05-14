@@ -13,25 +13,25 @@ from schafkopfrl.utils import two_hot_encode_card
 '''
 The network should have the following form
 
-input: 55 (game info) + 16*x (lstm of game history) + 16*x (lstm of current trick)
+input: 55 (game info) + 16*x (gru of game history) + 16*x (gru of current trick)
 linear layer: 256     + 256                         + 256        
 relu
 linear layer: 256       
 relu
 linear layer: 256   +  256
 relu  + relu
-action layer: (9[games]+32[cards])    + value layer: 1
+action layer: (9[games]+32[cards]+2[])    + value layer: 1
 softmax layer
 
 '''
-class ActorCriticNetworkLSTMContra(nn.Module):
+class ActorCriticNetworkGRU(nn.Module):
     def __init__(self):
-        super(ActorCriticNetworkLSTMContra, self).__init__()
+        super(ActorCriticNetworkGRU, self).__init__()
 
-        self.hidden_neurons = 512
+        self.hidden_neurons = 64
 
-        self.lstm_course_of_game = nn.LSTM(16, self.hidden_neurons, num_layers=2)  # Input dim is 16, output dim is hidden_neurons
-        self.lstm_current_trick = nn.LSTM(16, self.hidden_neurons, num_layers=2)  # Input dim is 16, output dim is hidden_neurons
+        self.gru_course_of_game = nn.GRU(16, self.hidden_neurons)  # Input dim is 16, output dim is hidden_neurons
+        self.gru_current_trick = nn.GRU(16, self.hidden_neurons)  # Input dim is 16, output dim is hidden_neurons
 
         self.fc1 = nn.Linear(74, self.hidden_neurons)
         self.fc2 = nn.Linear(self.hidden_neurons*3, self.hidden_neurons)
@@ -52,13 +52,13 @@ class ActorCriticNetworkLSTMContra(nn.Module):
         allowed_actions = allowed_actions.to(device=self.device).detach()
 
 
-        output, ([h1_,h2_], [c1_,c2_]) = self.lstm_course_of_game(course_of_game)
+        output1, hidden1 = self.gru_course_of_game(course_of_game)
 
-        output, ([h3_, h4_], [c3_, c4_]) = self.lstm_current_trick(current_trick)
+        output2, hidden2 = self.gru_current_trick(current_trick)
 
 
         x = F.relu(self.fc1(info_vector))
-        x = torch.cat((x, torch.squeeze(h2_), torch.squeeze(h4_)), -1)
+        x = torch.cat((x, torch.squeeze(hidden1), torch.squeeze(hidden2)), -1)
         x = F.relu(self.fc2(x))
         ax = F.relu(self.fc3a(x))
         bx = F.relu(self.fc3b(x))

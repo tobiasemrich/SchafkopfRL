@@ -66,7 +66,7 @@ class PPO:
     # experience_dataset = ExperienceDatasetLSTM(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
 
     # training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_linear.custom_collate, batch_size=self.batch_size, shuffle=True)
-    training_generator = data.DataLoader(dataset, collate_fn=Settings.collate_fun,
+    training_generator = data.DataLoader(dataset, collate_fn=dataset.custom_collate,
                                          batch_size=self.mini_batch_size, shuffle=True)
 
     # Optimize policy for K epochs:

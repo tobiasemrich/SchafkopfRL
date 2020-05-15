@@ -1,5 +1,5 @@
 import logging
-from sys import path
+from os import path
 
 import torch
 
@@ -31,8 +31,8 @@ class Settings:
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
   # what model to use
-  model, dataset, collate_fun = ActorCriticNetworkLinearContra,ExperienceDatasetLinear, experience_dataset_linear.custom_collate
-  #model, dataset = ActorCriticNetworkLSTMContra,ExperienceDatasetLSTM, experience_dataset_lstm.custom_collate
+  model, dataset = ActorCriticNetworkLinearContra,ExperienceDatasetLinear
+  #model, dataset = ActorCriticNetworkLSTMContra,ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
   update_games = 1000  # update policy every n games
@@ -51,7 +51,7 @@ class Settings:
   gamma = 0.99  # discount factor
   K_epochs = 16  # 8  # update policy for K epochs
   eps_clip = 0.2  # clip parameter for PPO
-  c1, c2 = 0.5, 0.005  # 0.001
+  c1, c2 = 0.5, 0.005  # 0.001  #c1 weight of value loss, c2 weight of entropy loss
 
   optimizer_weight_decay = 5e-5
 

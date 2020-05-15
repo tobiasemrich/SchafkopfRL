@@ -22,30 +22,30 @@ class ExperienceDatasetLSTM(data.Dataset):
         'Generates one sample of data'
         return [self.states[index], self.actions[index], self.allowed_actions[index], self.logprobs[index], self.rewards[index]]
 
-def custom_collate(batch):
+  def custom_collate(self, batch):
 
-    states_batch, actions_batch, allowed_actions_batch, logprobs_batch, rewards_batch = zip(*batch)
+      states_batch, actions_batch, allowed_actions_batch, logprobs_batch, rewards_batch = zip(*batch)
 
-    # convert list to tensor
-    # torch.stack(memory.states).to(device).detach()
-    states = []
-    transposed_states = list(map(list, zip(*states_batch)))
-    states.append(torch.stack(transposed_states[0]).detach())
+      # convert list to tensor
+      # torch.stack(memory.states).to(device).detach()
+      states = []
+      transposed_states = list(map(list, zip(*states_batch)))
+      states.append(torch.stack(transposed_states[0]).detach())
 
-    for i in range(2):
-        sequences = [torch.squeeze(seq, dim=1).detach() for seq in transposed_states[1+i]]
-        seq_lengths = [len(x) for x in sequences]
-        # pad the seq_batch
-        padded_seq_batch = torch.nn.utils.rnn.pad_sequence(sequences)
-        # pack the padded_seq_batch
-        packed_seq_batch = torch.nn.utils.rnn.pack_padded_sequence(padded_seq_batch, lengths=seq_lengths,
-                                                                   enforce_sorted=False)
+      for i in range(2):
+          sequences = [torch.squeeze(seq, dim=1).detach() for seq in transposed_states[1+i]]
+          seq_lengths = [len(x) for x in sequences]
+          # pad the seq_batch
+          padded_seq_batch = torch.nn.utils.rnn.pad_sequence(sequences)
+          # pack the padded_seq_batch
+          packed_seq_batch = torch.nn.utils.rnn.pack_padded_sequence(padded_seq_batch, lengths=seq_lengths,
+                                                                     enforce_sorted=False)
 
-        states.append(packed_seq_batch)
+          states.append(packed_seq_batch)
 
-    actions = torch.stack(actions_batch).detach()
-    allowed_actions = torch.stack(allowed_actions_batch).detach()
-    logprobs = torch.stack(logprobs_batch).detach()
-    rewards = torch.tensor(rewards_batch)
+      actions = torch.stack(actions_batch).detach()
+      allowed_actions = torch.stack(allowed_actions_batch).detach()
+      logprobs = torch.stack(logprobs_batch).detach()
+      rewards = torch.tensor(rewards_batch)
 
-    return [states, actions, allowed_actions, logprobs, rewards]
+      return [states, actions, allowed_actions, logprobs, rewards]

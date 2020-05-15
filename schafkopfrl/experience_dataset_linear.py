@@ -22,7 +22,7 @@ class ExperienceDatasetLinear(data.Dataset):
         'Generates one sample of data'
         return [self.states[index], self.actions[index], self.allowed_actions[index], self.logprobs[index], self.rewards[index]]
 
-def custom_collate(batch):
+  def custom_collate(self, batch):
 
     states_batch, actions_batch, allowed_actions_batch, logprobs_batch, rewards_batch = zip(*batch)
 

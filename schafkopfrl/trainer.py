@@ -73,7 +73,7 @@ def main():
     Settings.logger.info("Saving Checkpoint")
     torch.save(ppo.policy_old.state_dict(), Settings.checkpoint_folder + "/" + str(i_episode).zfill(8) + ".pt")
     Settings.logger.info("Evaluation")
-    play_against_other_players(Settings.checkpoint_folder, Settings.model.model, [RandomPlayer, RandomCowardPlayer, RuleBasedPlayer], Settings.eval_games,
+    play_against_other_players(Settings.checkpoint_folder, Settings.model, [RandomPlayer, RandomCowardPlayer, RuleBasedPlayer], Settings.eval_games,
                                Settings.summary_writer)
 
 def write_stats(gs, i_episode):

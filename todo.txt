@@ -53,3 +53,11 @@ Questions
     + play against a rule based bot
     * improve rule-based bot
 
+
+* What did I learn
+ - Using GPU does not always help when doing RL. Small networks, batches => CPU is faster. Best thing would be playouts using CPU (parallel) and then update on GPU
+ - increaseing batchsize and update_games helps making the agent learn better (better optima and more stable but slower)
+ - Handling of illegal moves (no consensus what works best)
+    - Masking of illegal moves
+    - Learning not to make illegal moves (sometimes by providing allowed actions as input) by punishing them with high negative reward if made
+    - learn the value function (instead of the policy) and only ask for value of valid state/action pairs

@@ -129,7 +129,7 @@ class Rules:
 
         return allowed_games
 
-    def allowed_cards(self, game_state, player):
+    def allowed_cards(self, game_state, player_id, player_cards, player_davongelaufen):
         """
         returns the cards that a player is allowed to play, given the player (specifically cards, position and davongelaufen)
         and the current game_state (specifically, first card of trick and game type)
@@ -148,12 +148,12 @@ class Rules:
 
         first_player_of_trick = game_state.first_player if game_state.trick_number == 0 else game_state.trick_owner[
             game_state.trick_number - 1]
-        if player.id == first_player_of_trick:  # first player in this trick
-            allowed_cards = player.cards.copy()
+        if player_id == first_player_of_trick:  # first player in this trick
+            allowed_cards = player_cards.copy()
             # exception is the Rufsau color
 
-            if game_state.game_type[1] == 0 and rufsau in player.cards and not player.davongelaufen:
-                ruf_sau_color_cards = [card for card in player.cards if
+            if game_state.game_type[1] == 0 and rufsau in player_cards and not player_davongelaufen:
+                ruf_sau_color_cards = [card for card in player_cards if
                                        (card[0] == game_state.game_type[0] and card not in trumps and card != rufsau)]
                 if len(ruf_sau_color_cards) < 3:
                     for c in ruf_sau_color_cards:
@@ -161,30 +161,30 @@ class Rules:
         else:
             first_card = game_state.course_of_game_playerwise[game_state.trick_number][first_player_of_trick]
             if first_card in trumps:
-                player_trumps = [card for card in player.cards if card in trumps]
+                player_trumps = [card for card in player_cards if card in trumps]
                 if len(player_trumps) > 0:
                     allowed_cards = player_trumps
                 else:
-                    allowed_cards = player.cards.copy()
+                    allowed_cards = player_cards.copy()
             else:  # color of first card not trump
                 if game_state.game_type[1] == 0 and game_state.game_type[0] == first_card[
-                    0] and rufsau in player.cards and not player.davongelaufen:
+                    0] and rufsau in player_cards and not player_davongelaufen:
                     # if the player has the Suchsau and the color is played and he has not davongelaufen then he has to play the ace
                     allowed_cards = [rufsau]
                 else:
-                    player_first_color_cards = [card for card in player.cards if
+                    player_first_color_cards = [card for card in player_cards if
                                                 card[0] == first_card[0] and card not in trumps]
                     if len(player_first_color_cards) > 0:
                         allowed_cards = player_first_color_cards
                     else:
-                        allowed_cards = player.cards.copy()
+                        allowed_cards = player_cards.copy()
             # TODO: check if this works correctly remove rufsau if not gesucht and not davongelaufen and not last trick
-            if game_state.game_type[1] == 0 and rufsau in allowed_cards and not (first_card[0] == rufsau[0] or player.davongelaufen or game_state.trick_number == 7):
+            if game_state.game_type[1] == 0 and rufsau in allowed_cards and not (first_card[0] == rufsau[0] or player_davongelaufen or game_state.trick_number == 7):
                 allowed_cards.remove(rufsau)
 
         return allowed_cards
 
-    def allowed_contra_retour(self, game_state, player):
+    def allowed_contra_retour(self, game_state, player_id, player_cards):
         """
         returns if it is allowed for the player to double the game at the current point in the game
 
@@ -197,14 +197,38 @@ class Rules:
         if len(game_state.contra_retour) == 0 and game_state.game_stage == Rules.CONTRA:  # contra check
             allowed = True
             # not allowed if you are the player or the team mate of the player
-            if game_state.game_player == player.id or (
-                    game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in player.cards)):
+            if game_state.game_player == player_id or (
+                    game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in player_cards)):
                 allowed = False
         elif len(game_state.contra_retour) == 1 and game_state.game_stage == Rules.RETOUR:  # retour check
             allowed = False
             # allowed if you are the player or the team mate of the player
-            if game_state.game_player == player.id or (
-                    game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in player.cards):
+            if game_state.game_player == player_id or (
+                    game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in player_cards):
                 allowed = True
 
         return allowed
+
+    def highest_game(self, bidding_round, first_player):
+        current_highest_game = [None, None]
+        game_player = None
+        for p in range(4):
+            player_id = (first_player + p) % 4
+            game_type = bidding_round[player_id]
+            if current_highest_game[1] == None or (not game_type[1] == None and game_type[1] > current_highest_game[1]):
+                current_highest_game = game_type
+                game_player = player_id
+        return (game_player, current_highest_game)
+
+    # return the player id who played the highest card in the trick, trick needs to be sorted by player id
+    def trick_owner(self, trick, first_player, game_type):
+        highest_card_index = first_player
+        for i in range(1, 4):
+            player_id = (first_player + i) % 4
+            if self.rules.higher_card(game_type, trick[highest_card_index], trick[player_id]):
+                highest_card_index = player_id
+        return highest_card_index
+
+    # return the number of points in trick
+    def count_points(self, trick_cards):
+        return sum([self.card_scores[number] for color, number in trick_cards])

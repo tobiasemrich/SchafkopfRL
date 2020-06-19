@@ -42,7 +42,7 @@ def main():
   ppo = PPO(policy, [Settings.lr, Settings.lr_stepsize, Settings.lr_gamma], Settings.betas, Settings.gamma, Settings.K_epochs, Settings.eps_clip, Settings.batch_size,Settings.mini_batch_size, c1=Settings.c1, c2=Settings.c2, start_episode=max_gen-1  )
 
   #create a game simulation
-  gs = SchafkopfGame(RlPlayer(0, ppo.policy_old), RlPlayer(1, ppo.policy_old), RlPlayer(2, ppo.policy_old), RlPlayer(3, ppo.policy_old), Settings.random_seed)
+  schafkopf_game = SchafkopfGame(RlPlayer(0, ppo.policy_old), RlPlayer(1, ppo.policy_old), RlPlayer(2, ppo.policy_old), RlPlayer(3, ppo.policy_old), Settings.random_seed)
 
   # training loop
   for _ in range(0, 90000000):
@@ -51,23 +51,23 @@ def main():
     # play a bunch of games
     t0 = time.time()
     for _ in range(Settings.update_games):
-        game_state = gs.play_one_game()
+        game_state = schafkopf_game.play_one_game()
         i_episode += 1
     t1 = time.time()
 
     #update the policy
     Settings.logger.info("updating policy")
-    ppo.update(gs.get_player_memories(), i_episode)
+    ppo.update(schafkopf_game.get_player_memories(), i_episode)
     t2 = time.time()
     ppo.lr_scheduler.step(i_episode)
 
     # writing game statistics for tensorboard
     Settings.logger.info("Episode: "+str(i_episode) + " game simulation (s) = "+str(t1-t0) + " update (s) = "+str(t2-t1))
-    gs.print_game(game_state)
-    write_stats(gs, i_episode)
+    schafkopf_game.print_game(game_state)
+    write_stats(schafkopf_game, i_episode)
 
     # reset memories and replace policy
-    gs = SchafkopfGame(RlPlayer(0, ppo.policy_old), RlPlayer(1, ppo.policy_old), RlPlayer(2, ppo.policy_old), RlPlayer(3, ppo.policy_old), Settings.random_seed)
+    schafkopf_game = SchafkopfGame(RlPlayer(0, ppo.policy_old), RlPlayer(1, ppo.policy_old), RlPlayer(2, ppo.policy_old), RlPlayer(3, ppo.policy_old), Settings.random_seed)
 
     # save and evaluate the policy
     Settings.logger.info("Saving Checkpoint")
@@ -76,17 +76,17 @@ def main():
     play_against_other_players(Settings.checkpoint_folder, Settings.model, [RandomPlayer, RandomCowardPlayer, RuleBasedPlayer], Settings.eval_games,
                                Settings.summary_writer)
 
-def write_stats(gs, i_episode):
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_weiter', gs.game_count[0] / Settings.update_games, i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_sauspiel', gs.game_count[1] / Settings.update_games, i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_wenz', gs.game_count[2] / Settings.update_games, i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_solo', gs.game_count[3] / Settings.update_games, i_episode)
+def write_stats(schafkopf_game, i_episode):
+  Settings.summary_writer.add_scalar('Game_Statistics/fraction_weiter', schafkopf_game.game_count[0] / Settings.update_games, i_episode)
+  Settings.summary_writer.add_scalar('Game_Statistics/fraction_sauspiel', schafkopf_game.game_count[1] / Settings.update_games, i_episode)
+  Settings.summary_writer.add_scalar('Game_Statistics/fraction_wenz', schafkopf_game.game_count[2] / Settings.update_games, i_episode)
+  Settings.summary_writer.add_scalar('Game_Statistics/fraction_solo', schafkopf_game.game_count[3] / Settings.update_games, i_episode)
 
-  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_sauspiel', np.divide(gs.won_game_count[1], gs.game_count[1]), i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_wenz', np.divide(gs.won_game_count[2], gs.game_count[2]), i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_solo', np.divide(gs.won_game_count[3], gs.game_count[3]), i_episode)
+  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_sauspiel', np.divide(schafkopf_game.won_game_count[1], schafkopf_game.game_count[1]), i_episode)
+  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_wenz', np.divide(schafkopf_game.won_game_count[2], schafkopf_game.game_count[2]), i_episode)
+  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_solo', np.divide(schafkopf_game.won_game_count[3], schafkopf_game.game_count[3]), i_episode)
 
-  Settings.summary_writer.add_scalar('Game_Statistics/contra_prob', np.divide(gs.contra_retour[0], Settings.update_games), i_episode)
+  Settings.summary_writer.add_scalar('Game_Statistics/contra_prob', np.divide(schafkopf_game.contra_retour[0], Settings.update_games), i_episode)
 
 def play_against_other_players(checkpoint_folder, model_class, other_player_classes, runs, summary_writer):
 

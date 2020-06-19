@@ -6,22 +6,22 @@
 
 Missing Functions
     * include klopfen
-    * include spritzen
-    * wann darf die Suchsau gespielt werden
+    + include spritzen
+    + wann darf die Suchsau gespielt werden
         * wenn gesucht ist
         * wenn schon gesucht wurde
         * beim letzten Stich
     * davonlaufen: werden die teams gesetzt?
 
 Things I added that I don't like
-    * Reward Shaping: trick points are added to reward
+    + Reward Shaping: trick points are added to reward
     * Action Selection: hard coded solos and wenz (when player has a lot of trumps)
 
 Questions
     * warum brauchts 2 policies in ppo? eigentlich wird immer nur eine her genommen
 
 * Bug fixing
-    * evaluiere ein spiel states/actions ,...
+    + evaluiere ein spiel states/actions ,...
     + overfitte auf ein spiel
 
 
@@ -45,7 +45,7 @@ Questions
     + player_plays_card: add probability of playing that card and show it in print game
     + loss shown in tensorboard is dependent on learning rate currently, this should be changed
     * add batchnorm (faster training?) --> not good for RL
-    * use gru instead of LSTM
+    + use gru instead of LSTM
     * current trick encoding: one lstm layer should be enough
 
 * new metrics to see that the learner makes progress
@@ -53,6 +53,14 @@ Questions
     + play against a rule based bot
     * improve rule-based bot
 
+* Next
+    * MCTS
+    * Soft Actor Critic
+    * try to implement gym env
+    * Parameter Changes
+        * K = 8 instead of 16
+        * entropy loss coefficient back to 0.001
+        * increase batchsize further
 
 * What did I learn
  - Using GPU does not always help when doing RL. Small networks, batches => CPU is faster. Best thing would be playouts using CPU (parallel) and then update on GPU

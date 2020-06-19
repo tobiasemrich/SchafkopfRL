@@ -75,7 +75,7 @@ class RlPlayer(Player):
   def contra_retour(self, game_state):
     #check if it is allowed to contra or retour
     allowed = np.array([0, 1])
-    if self.rules.allowed_contra_retour(game_state, self):
+    if self.rules.allowed_contra_retour(game_state, self.id, self.cards):
       allowed = np.array([1, 1])
 
     action, prob = self.act(
@@ -93,7 +93,7 @@ class RlPlayer(Player):
   def select_card(self, game_state):
     action, prob = self.act(
       self.policy.preprocess(game_state, self),
-      torch.tensor(np.concatenate((np.zeros(9),np.zeros(2), one_hot_cards(self.rules.allowed_cards(game_state, self))))).float())
+      torch.tensor(np.concatenate((np.zeros(9),np.zeros(2), one_hot_cards(self.rules.allowed_cards(game_state, self.id, self.cards, self.davongelaufen))))).float())
 
     selected_card = self.rules.cards[action - 11]
 
@@ -113,14 +113,15 @@ class RlPlayer(Player):
     rewards = steps_per_game*[0.]
 
     # REWARD SHAPING: reward for each action = number of points made/lost
-    '''for i in range(steps_per_game-1):
-      points = game_state.count_points(i)
-      if game_state.trick_owner[i] == self.id:
-        rewards[i+1] += points/5
-      elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
-        rewards[i + 1] += points/5
-      else:
-        rewards[i + 1] -= points/5'''
+    '''if game_state.game_type != [None, None]:
+      for i in range(8):
+        points = game_state.count_points(i)
+        if game_state.trick_owner[i] == self.id:
+          rewards[i+1] += points/5
+        elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
+          rewards[i + 1] += points/5
+        else:
+          rewards[i + 1] -= points/5'''
 
     rewards[-1] += reward
     self.memory.rewards += rewards

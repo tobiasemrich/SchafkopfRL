@@ -84,7 +84,7 @@ class RuleBasedPlayer(Player):
       return False, 1
 
   def select_card(self, game_state):
-    allowed_cards = self.rules.allowed_cards(game_state, self)
+    allowed_cards = self.rules.allowed_cards(game_state, self.id, self.cards, self.davongelaufen)
     selected_card = random.choice(allowed_cards)
 
     #precompute some interesting features

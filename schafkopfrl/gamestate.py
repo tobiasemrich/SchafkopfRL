@@ -20,9 +20,10 @@ class GameState:
         self.played_cards = 0
 
         self.game_stage = None
+        self.current_player = self.first_player
 
         # who wants to play what
-        self.bidding_round = [[None, None] for x in range(4)]
+        self.bidding_round = [None for x in range(4)]
 
         # who doubled the game (kontra / retour)
         self.contra_retour = []

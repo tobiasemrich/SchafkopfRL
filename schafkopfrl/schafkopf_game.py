@@ -112,6 +112,88 @@ class SchafkopfGame:
 
         return game_state
 
+    def finish_game(self, game_state):
+        """
+    Finishes one game of Schafkopf between 4 players with given policies, starting from a given game_state:
+    1) selects a dealer
+    2) asks every player to call a game and selects the highest
+    3) performs the trick phase where each player plays one card and the highest card gets the trick
+    4) determins winners and rewards
+
+    :return: return the final game_state of the game
+    :rtype: game_state
+    """
+        if game_state == None:
+            dealer = random.choice([0, 1, 2, 3])
+            game_state = GameState(dealer)
+            # deal cards
+            random.shuffle(self.rules.cards)
+            for p in range(4):
+                self.players[p].take_cards(self.rules.cards[8 * p:8 * (p + 1)])
+            game_state.game_stage = Rules.BIDDING
+
+        if game_state.game_stage == Rules.BIDDING:
+            # every player beginning with the one left of the dealer calls his game
+            current_highest_game = [None, None]
+            game_player = None
+            for p in range(4):
+                current_player_id = (game_state.first_player + p) % 4
+                if game_state.bidding_round[current_player_id] == None:
+                    current_player = self.players[current_player_id]
+                    game_type, prob = current_player.call_game_type(game_state)
+                    game_state.bidding_round[current_player_id] = game_type
+                    game_state.action_probabilities[0][current_player_id] = prob
+                    if current_highest_game[1] == None or (not game_type[1] == None and game_type[1] > current_highest_game[1]):
+                        current_highest_game = game_type
+                        game_player = current_player_id
+            game_state.game_player = game_player
+            game_state.game_type = current_highest_game
+            if game_state.game_type != [None, None]:
+                # gegenspieler can now double the game
+                game_state.game_stage = Rules.CONTRA
+
+        if game_state.game_stage == Rules.CONTRA:
+            # play the game if someone is playing
+            for p in range(4):
+                current_player_id = (game_state.first_player + p) % 4
+                current_player = self.players[current_player_id]
+                contra, prob = current_player.contra_retour(game_state)
+                game_state.action_probabilities[1][current_player_id] = prob
+                if contra:
+                    game_state.contra_retour.append(current_player_id)
+
+            game_state.game_stage = Rules.RETOUR
+            for p in range(4):
+                current_player_id = (game_state.first_player + p) % 4
+                current_player = self.players[current_player_id]
+                retour, prob = current_player.contra_retour(game_state)
+                game_state.action_probabilities[2][current_player_id] = prob
+                if retour:
+                    game_state.contra_retour.append(current_player_id)
+
+            # trick phase
+            game_state.game_stage = Rules.TRICK
+            first_player_of_trick = game_state.first_player
+            for trick_number in range(8):
+                game_state.trick_number = trick_number
+                for p in range(4):
+                    current_player_id = (first_player_of_trick + p) % 4
+                    current_player = self.players[current_player_id]
+                    card, prob = current_player.select_card(game_state)
+                    game_state.player_plays_card(current_player_id, card, prob)
+                first_player_of_trick = game_state.trick_owner[trick_number]
+
+        # determine winner(s) and rewards
+        player_rewards = game_state.get_rewards()
+        for p in range(4):
+            self.players[p].retrieve_reward(player_rewards[p], game_state)
+
+        # update statistics just for logging purposes
+        self.update_statistics(game_state)
+
+        return game_state
+
+
     def setSeed(self, seed):
         if seed == None:
             seed = int(time.time() * 1000) % 2**32

@@ -31,7 +31,7 @@ class RandomCowardPlayer(Player):
     return False, 1
 
   def select_card(self, game_state):
-    selected_card = random.choice(self.rules.allowed_cards(game_state, self))
+    selected_card = random.choice(self.rules.allowed_cards(game_state, self.id, self.cards, self.davongelaufen))
 
     self.cards.remove(selected_card)
     #Davonlaufen needs to be tracked

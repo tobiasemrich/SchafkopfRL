@@ -6,6 +6,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import experience_dataset_lstm
 import experience_dataset_linear
+from models.actor_critic_gru import ActorCriticNetworkGRU
 from schafkopfrl.experience_dataset_linear import ExperienceDatasetLinear
 from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM
 from schafkopfrl.models.actor_critic_linear_contra import ActorCriticNetworkLinearContra
@@ -31,19 +32,20 @@ class Settings:
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
   # what model to use
-  model, dataset = ActorCriticNetworkLinearContra,ExperienceDatasetLinear
+  #model, dataset = ActorCriticNetworkLinearContra,ExperienceDatasetLinear
   #model, dataset = ActorCriticNetworkLSTMContra,ExperienceDatasetLSTM
+  model, dataset = ActorCriticNetworkGRU, ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
-  update_games = 1000  # update policy every n games
-  batch_size = update_games * 6
-  mini_batch_size = 1000  # make this as large as possible to fit in gpu
+  update_games = 10000  # update policy every n games
+  batch_size = update_games * 22
+  mini_batch_size = 10000  # make this as large as possible to fit in gpu
 
   eval_games = 500
   checkpoint_folder = "../policies"
 
   # lr = 0.0002
-  lr = 0.001
+  lr = 0.002
   lr_stepsize = 30000000  # 300000
   lr_gamma = 0.3
 
@@ -53,6 +55,6 @@ class Settings:
   eps_clip = 0.2  # clip parameter for PPO
   c1, c2 = 0.5, 0.005  # 0.001  #c1 weight of value loss, c2 weight of entropy loss
 
-  optimizer_weight_decay = 5e-5
+  optimizer_weight_decay = 1e-5
 
   random_seed = None

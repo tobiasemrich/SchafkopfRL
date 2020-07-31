@@ -27,10 +27,10 @@ driver.get("http://www.sauspiel.de")
 #login
 elem = driver.find_element_by_id("ontop_login")
 elem.clear()
-elem.send_keys("Tobiaz")
+elem.send_keys("XXX")
 elem = driver.find_element_by_id("login_inline_password")
 elem.clear()
-elem.send_keys("-Template123")
+elem.send_keys("YYY")
 elem.send_keys(Keys.RETURN)
 
 # click spielen

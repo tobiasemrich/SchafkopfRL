@@ -4,13 +4,14 @@ from torch.utils import data
 class ExperienceDatasetLSTM(data.Dataset):
 
   'Characterizes a dataset for PyTorch'
-  def __init__(self, states, actions, allowed_actions, logprobs, rewards):
+  def __init__(self, states, actions, allowed_actions, logprobs, rewards, num_sequences=1):
         'Initialization'
         self.states = states
         self.actions = actions
         self.allowed_actions = allowed_actions
         self.logprobs = logprobs
         self.rewards = rewards
+        self.num_sequences = num_sequences
 
 
 
@@ -32,7 +33,7 @@ class ExperienceDatasetLSTM(data.Dataset):
       transposed_states = list(map(list, zip(*states_batch)))
       states.append(torch.stack(transposed_states[0]).detach())
 
-      for i in range(2):
+      for i in range(self.num_sequences):
           sequences = [torch.squeeze(seq, dim=1).detach() for seq in transposed_states[1+i]]
           seq_lengths = [len(x) for x in sequences]
           # pad the seq_batch

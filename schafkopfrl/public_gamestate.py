@@ -35,3 +35,6 @@ class PublicGameState:
         self.trick_owner = [None] * 8
 
         self.scores = [0, 0, 0, 0]
+
+        #which player is davongelaufen
+        self.davongelaufen = None

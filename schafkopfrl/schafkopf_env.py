@@ -11,6 +11,7 @@ class SchafkpfEnv:
   def __init__(self, seed=None):
     self.gamestate = None
     self.player_cards = [None, None, None, None]
+    self.rewards = [0, 0, 0, 0]
     self.setSeed(seed)
 
   def reset(self):
@@ -31,15 +32,19 @@ class SchafkpfEnv:
     state["curent_player_cards"] = self.player_cards[self.gamestate.current_player]
     state["allowed_actions"] = self.rules.allowed_games(self.player_cards[self.gamestate.current_player])
 
-    return state, 0, False
+
+
+    return state, [0, 0, 0, 0], False
 
   def step(self, action, action_prob=1):
 
+    state = {}
 
     if self.gamestate.game_stage == Rules.BIDDING:
       self.gamestate.bidding_round[self.gamestate.current_player] = action
       self.gamestate.action_probabilities[0][self.gamestate.current_player] = action_prob
       self.gamestate.current_player = (self.gamestate.current_player+1)%4
+      state["allowed_actions"] = self.rules.allowed_games(self.player_cards[self.gamestate.current_player])
       if self.gamestate.bidding_round[self.gamestate.current_player] != None:
         self.gamestate.game_player, self.gamestate.game_player = self.rules.highest_game(self.gamestate.bidding_round)
         self.gamestate.game_stage = Rules.CONTRA
@@ -78,16 +83,21 @@ class SchafkpfEnv:
         self.trick_number += 1
         self.gamestate.current_player = trick_owner
 
-    state = {}
+
     state["game_state"] = self.gamestate
     state["curent_player_cards"] = self.player_cards[self.gamestate.current_player]
-    state["allowed_actions"] = self.rules.allowed_games(self.player_cards[self.gamestate.current_player])
+    #TODO: allowed actions have to be set for each stage of the game,
+    # need to adapt functions in rules,
+    # need to add davonlaufen irgendwo
+    # probably better to create a new branch now
 
     terminal = False
+    rewards = [0, 0, 0, 0]
     if self.trick_number == 8:
       terminal = True
+      rewards = self.getRewards()
 
-    return state, 0, terminal
+    return state, rewards, terminal
 
   # return the number of points in trick
   #def count_points(self, trick):

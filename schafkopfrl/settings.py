@@ -37,9 +37,9 @@ class Settings:
   model, dataset = ActorCriticNetworkGRU, ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
-  update_games = 10000  # update policy every n games
+  update_games = 100  # update policy every n games
   batch_size = update_games * 22
-  mini_batch_size = 10000  # make this as large as possible to fit in gpu
+  mini_batch_size = 100  # make this as large as possible to fit in gpu
 
   eval_games = 500
   checkpoint_folder = "../policies"

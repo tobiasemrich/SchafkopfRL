@@ -33,8 +33,8 @@ class Settings:
 
   # what model to use
   #model, dataset = ActorCriticNetworkLinearContra,ExperienceDatasetLinear
-  #model, dataset = ActorCriticNetworkLSTMContra,ExperienceDatasetLSTM
-  model, dataset = ActorCriticNetworkGRU, ExperienceDatasetLSTM
+  model, dataset = ActorCriticNetworkLSTMContra,ExperienceDatasetLSTM
+  #model, dataset = ActorCriticNetworkGRU, ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
   update_games = 100  # update policy every n games

@@ -62,7 +62,7 @@ class PPO:
     rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-5)
 
     # Create dataset from collected experiences
-    dataset = Settings.dataset(memory.states, memory.actions, memory.allowed_actions, memory.logprobs,rewards)
+    dataset = Settings.dataset(memory.states, memory.actions, memory.logprobs,rewards)
     # experience_dataset = ExperienceDatasetLSTM(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
 
     # training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_linear.custom_collate, batch_size=self.batch_size, shuffle=True)
@@ -82,16 +82,15 @@ class PPO:
       mini_batches_in_batch = int(self.batch_size / self.mini_batch_size)
       self.optimizer.zero_grad()
 
-      for i, (old_states, old_actions, old_allowed_actions, old_logprobs, old_rewards) in enumerate(
+      for i, (old_states, old_actions, old_logprobs, old_rewards) in enumerate(
               training_generator):  # mini batch
 
         # Transfer to GPU
         old_states = [old_state.to(Settings.device) for old_state in old_states]
-        old_actions, old_allowed_actions, old_logprobs, old_rewards = old_actions.to(Settings.device), old_allowed_actions.to(
-          Settings.device), old_logprobs.to(Settings.device), old_rewards.to(Settings.device)
+        old_actions, old_logprobs, old_rewards = old_actions.to(Settings.device), old_logprobs.to(Settings.device), old_rewards.to(Settings.device)
 
         # Evaluating old actions and values :
-        logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_allowed_actions, old_actions)
+        logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
 
         # Finding the ratio (pi_theta / pi_theta__old):
         ratios = torch.exp(logprobs - old_logprobs.detach())

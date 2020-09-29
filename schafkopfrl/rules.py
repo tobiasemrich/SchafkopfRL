@@ -1,4 +1,4 @@
-
+import numpy as np
 class Rules:
     """
     The Rules class contains all the rules necessary to play a game of Schafkopf. Is used by players to check for allowed games and allowed cards
@@ -105,6 +105,15 @@ class Rules:
         return trumps_color + trumps_number
 
 
+    def allowed_actions(self, game_state, player_cards):
+        if game_state.game_stage == Rules.BIDDING:
+            return self.allowed_games(player_cards)
+        elif game_state.game_stage == Rules.CONTRA or game_state.game_stage == Rules.RETOUR:
+            return self.allowed_contra_retour(game_state, player_cards)
+        else:
+            return self.allowed_cards(game_state, player_cards)
+
+
     def allowed_games(self, player_cards):
         """
         returns a list of allowed games, given the player hand. Generally, all games are allowed except
@@ -129,17 +138,10 @@ class Rules:
 
         return allowed_games
 
-    def allowed_cards(self, game_state, player_id, player_cards, player_davongelaufen):
+    def allowed_cards(self, game_state, player_cards):
         """
         returns the cards that a player is allowed to play, given the player (specifically cards, position and davongelaufen)
         and the current game_state (specifically, first card of trick and game type)
-
-        :param game_state: the current game_state
-        :type game_state: game_state
-        :param player: the player
-        :type player: player
-        :return: the list of allowed cards
-        :rtype: list
         """
         allowed_cards = []
 
@@ -148,11 +150,11 @@ class Rules:
 
         first_player_of_trick = game_state.first_player if game_state.trick_number == 0 else game_state.trick_owner[
             game_state.trick_number - 1]
-        if player_id == first_player_of_trick:  # first player in this trick
+        if game_state.current_player == first_player_of_trick:  # first player in this trick
             allowed_cards = player_cards.copy()
             # exception is the Rufsau color
 
-            if game_state.game_type[1] == 0 and rufsau in player_cards and not player_davongelaufen:
+            if game_state.game_type[1] == 0 and rufsau in player_cards and not game_state.current_player == game_state.davongelaufen:
                 ruf_sau_color_cards = [card for card in player_cards if
                                        (card[0] == game_state.game_type[0] and card not in trumps and card != rufsau)]
                 if len(ruf_sau_color_cards) < 3:
@@ -168,7 +170,7 @@ class Rules:
                     allowed_cards = player_cards.copy()
             else:  # color of first card not trump
                 if game_state.game_type[1] == 0 and game_state.game_type[0] == first_card[
-                    0] and rufsau in player_cards and not player_davongelaufen:
+                    0] and rufsau in player_cards and not game_state.current_player == game_state.davongelaufen:
                     # if the player has the Suchsau and the color is played and he has not davongelaufen then he has to play the ace
                     allowed_cards = [rufsau]
                 else:
@@ -178,34 +180,33 @@ class Rules:
                         allowed_cards = player_first_color_cards
                     else:
                         allowed_cards = player_cards.copy()
-            # TODO: check if this works correctly remove rufsau if not gesucht and not davongelaufen and not last trick
-            if game_state.game_type[1] == 0 and rufsau in allowed_cards and not (first_card[0] == rufsau[0] or player_davongelaufen or game_state.trick_number == 7):
+            # remove rufsau if not gesucht and not davongelaufen and not last trick
+            if game_state.game_type[1] == 0 and rufsau in allowed_cards and not (first_card[0] == rufsau[0] or game_state.current_player == game_state.davongelaufen or game_state.trick_number == 7):
                 allowed_cards.remove(rufsau)
 
         return allowed_cards
 
-    def allowed_contra_retour(self, game_state, player_id, player_cards):
+    def allowed_contra_retour(self, game_state, player_cards):
         """
         returns if it is allowed for the player to double the game at the current point in the game
 
         :param game_state: current game state
-        :param player: the player who wants to double
-        :return: true if it is possible to double otherwise false
+        :return: [True, False]  if it is possible to double otherwise [False]
         """
-        allowed = False
+        allowed = [False]
 
-        if len(game_state.contra_retour) == 0 and game_state.game_stage == Rules.CONTRA:  # contra check
-            allowed = True
+        if not np.any(game_state.contra) and game_state.game_stage == Rules.CONTRA:  # contra check
+            allowed.append(True)
             # not allowed if you are the player or the team mate of the player
-            if game_state.game_player == player_id or (
+            if game_state.game_player == game_state.current_player or (
                     game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in player_cards)):
-                allowed = False
-        elif len(game_state.contra_retour) == 1 and game_state.game_stage == Rules.RETOUR:  # retour check
-            allowed = False
+                allowed = [False]
+        elif np.any(game_state.contra) and not np.any(game_state.retour) and game_state.game_stage == Rules.RETOUR:  # retour check
+            allowed = [False]
             # allowed if you are the player or the team mate of the player
-            if game_state.game_player == player_id or (
+            if game_state.game_player == game_state.current_player or (
                     game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in player_cards):
-                allowed = True
+                allowed.append(True)
 
         return allowed
 
@@ -225,7 +226,7 @@ class Rules:
         highest_card_index = first_player
         for i in range(1, 4):
             player_id = (first_player + i) % 4
-            if self.rules.higher_card(game_type, trick[highest_card_index], trick[player_id]):
+            if self.higher_card(game_type, trick[highest_card_index], trick[player_id]):
                 highest_card_index = player_id
         return highest_card_index
 

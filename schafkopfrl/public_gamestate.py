@@ -38,3 +38,6 @@ class PublicGameState:
 
         #which player is davongelaufen
         self.davongelaufen = None
+
+        # for debugging purposes remember probs for picking an action
+        self.action_probabilities = [[None for x in range(4)] for y in range(11)]

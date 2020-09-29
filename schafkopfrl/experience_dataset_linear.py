@@ -24,14 +24,13 @@ class ExperienceDatasetLinear(data.Dataset):
 
   def custom_collate(self, batch):
 
-    states_batch, actions_batch, allowed_actions_batch, logprobs_batch, rewards_batch = zip(*batch)
+    states_batch, actions_batch, logprobs_batch, rewards_batch = zip(*batch)
 
     states = [state[0] for state in states_batch]
     states = torch.stack(states).detach()
 
     actions = torch.stack(actions_batch).detach()
-    allowed_actions = torch.stack(allowed_actions_batch).detach()
     logprobs = torch.stack(logprobs_batch).detach()
     rewards = torch.tensor(rewards_batch)
 
-    return [[states], actions, allowed_actions, logprobs, rewards]
+    return [[states], actions, logprobs, rewards]

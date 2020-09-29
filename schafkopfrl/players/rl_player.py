@@ -10,30 +10,33 @@ from schafkopfrl.utils import one_hot_games, one_hot_cards
 
 class RlPlayer(Player):
 
-  def __init__(self, id, policy):
-    super().__init__(id)
+  def __init__(self, policy):
+    super().__init__()
     self.memory = Memory()
     self.policy = policy
 
-  def act(self, state, allowed_actions):
-    action_probs, value = self.policy(
-      state,
-      allowed_actions)
+  def act(self, state):
+
+    encoded_state = self.policy.preprocess(state)
+
+    action_probs, value = self.policy(encoded_state)
 
     dist = Categorical(action_probs)
-
-    #self.print_action_probs(action_probs.tolist())
-
     action = dist.sample()
 
-    self.memory.states.append([s.detach() for s in state])
-    self.memory.allowed_actions.append(allowed_actions.detach())
+    self.memory.states.append([s.detach() for s in encoded_state])
     self.memory.actions.append(action)
     self.memory.logprobs.append(dist.log_prob(action).detach())
 
-    action_prob = dist.probs[action].item() # only for debugging purposes
+    action_prob = dist.probs[action].item()  # only for debugging purposes
 
-    return action.item(), action_prob
+    if action.item() < 9: # bidding round
+      return self.rules.games[action], action_prob
+    elif action.item() < 11: # contra or retour
+      return action.item() - 9 == 0, action_prob
+    else: #play card
+      return self.rules.cards[action - 11], action_prob
+
 
   def call_game_type(self, game_state):
 
@@ -72,60 +75,13 @@ class RlPlayer(Player):
 
     return selected_game, prob
 
-  def contra_retour(self, game_state):
-    #check if it is allowed to contra or retour
-    allowed = np.array([0, 1])
-    if self.rules.allowed_contra_retour(game_state, self.id, self.cards):
-      allowed = np.array([1, 1])
-
-    action, prob = self.act(
-      self.policy.preprocess(game_state, self),
-      torch.tensor(np.concatenate((np.zeros(9), allowed, np.zeros(32)))).float())
-
-    if action-9 == 0:
-      return True, prob
-    else:
-      return False, prob
-
-
-
-
-  def select_card(self, game_state):
-    action, prob = self.act(
-      self.policy.preprocess(game_state, self),
-      torch.tensor(np.concatenate((np.zeros(9),np.zeros(2), one_hot_cards(self.rules.allowed_cards(game_state, self.id, self.cards, self.davongelaufen))))).float())
-
-    selected_card = self.rules.cards[action - 11]
-
-    self.cards.remove(selected_card)
-    #Davonlaufen needs to be tracked
-    if game_state.game_type[1] == 0: # Sauspiel
-      first_player_of_trick = game_state.first_player if game_state.trick_number == 0 else game_state.trick_owner[game_state.trick_number - 1]
-      rufsau = [game_state.game_type[0],7]
-      if game_state.game_type[0] == selected_card[0] and selected_card != rufsau and first_player_of_trick == self.id and selected_card not in self.rules.get_sorted_trumps(game_state.game_type) and rufsau in self.cards:
-        self.davongelaufen = True
-    return selected_card, prob
-
-  def retrieve_reward(self, reward, game_state):
-    steps_per_game = 11
-    if game_state.game_type == [None, None]:
-      steps_per_game=1
-    rewards = steps_per_game*[0.]
-
-    # REWARD SHAPING: reward for each action = number of points made/lost
-    '''if game_state.game_type != [None, None]:
-      for i in range(8):
-        points = game_state.count_points(i)
-        if game_state.trick_owner[i] == self.id:
-          rewards[i+1] += points/5
-        elif (self.id in game_state.get_player_team() and game_state.trick_owner[i] in game_state.get_player_team()) or (self.id not in game_state.get_player_team() and game_state.trick_owner[i] not in game_state.get_player_team()):
-          rewards[i + 1] += points/5
-        else:
-          rewards[i + 1] -= points/5'''
+  def retrieve_reward(self, reward):
+    steps =  len(self.memory.states) - len(self.memory.rewards)
+    rewards = steps * [0.]
 
     rewards[-1] += reward
     self.memory.rewards += rewards
-    is_terminal = steps_per_game * [False]
+    is_terminal = steps * [False]
     is_terminal[-1] = True
     self.memory.is_terminals += is_terminal
 

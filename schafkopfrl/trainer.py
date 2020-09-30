@@ -4,6 +4,7 @@ from os import listdir
 import numpy as np
 import torch
 
+from game_statistics import GameStatistics
 from memory import Memory
 from models.actor_critic_linear_contra import ActorCriticNetworkLinearContra
 from schafkopf_env import SchafkopfEnv
@@ -17,6 +18,7 @@ from schafkopfrl.schafkopf_game import SchafkopfGame
 from tensorboard import program
 
 from settings import Settings
+
 
 def main():
 
@@ -47,6 +49,7 @@ def main():
   players = [RlPlayer(ppo.policy_old), RlPlayer(ppo.policy_old), RlPlayer(ppo.policy_old), RlPlayer(ppo.policy_old)]
   #create a game simulation
   schafkopf_env = SchafkopfEnv(Settings.random_seed)
+  game_statistics = GameStatistics()
 
   # training loop
   for _ in range(0, 90000000):
@@ -62,6 +65,7 @@ def main():
       for p in range(4):
         players[p].retrieve_reward(reward[p])
       i_episode += 1
+      game_statistics.update_statistics(state["game_state"], reward)
     t1 = time.time()
 
     #update the policy
@@ -78,7 +82,7 @@ def main():
     # writing game statistics for tensorboard
     Settings.logger.info("Episode: "+str(i_episode) + " game simulation (s) = "+str(t1-t0) + " update (s) = "+str(t2-t1))
     schafkopf_env.print_game()
-    write_stats(schafkopf_env, i_episode)
+    game_statistics.write_and_reset (i_episode)
 
     # reset memories and replace policy
     players = [RlPlayer(ppo.policy_old), RlPlayer(ppo.policy_old), RlPlayer(ppo.policy_old), RlPlayer(ppo.policy_old)]
@@ -90,17 +94,6 @@ def main():
     play_against_other_players(Settings.checkpoint_folder, Settings.model, [RandomPlayer, RandomCowardPlayer, RuleBasedPlayer], Settings.eval_games,
                                Settings.summary_writer)
 
-def write_stats(schafkopf_env, i_episode):
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_weiter', schafkopf_env.game_count[0] / Settings.update_games, i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_sauspiel', schafkopf_env.game_count[1] / Settings.update_games, i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_wenz', schafkopf_env.game_count[2] / Settings.update_games, i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/fraction_solo', schafkopf_env.game_count[3] / Settings.update_games, i_episode)
-
-  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_sauspiel', np.divide(schafkopf_env.won_game_count[1], schafkopf_env.game_count[1]), i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_wenz', np.divide(schafkopf_env.won_game_count[2], schafkopf_env.game_count[2]), i_episode)
-  Settings.summary_writer.add_scalar('Game_Statistics/winning_prob_solo', np.divide(schafkopf_env.won_game_count[3], schafkopf_env.game_count[3]), i_episode)
-
-  Settings.summary_writer.add_scalar('Game_Statistics/contra_prob', np.divide(schafkopf_env.contra_retour[0], Settings.update_games), i_episode)
 
 def play_against_other_players(checkpoint_folder, model_class, other_player_classes, runs, summary_writer):
 

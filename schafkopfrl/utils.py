@@ -3,7 +3,6 @@ from random import random
 import numpy as np
 from schafkopfrl.rules import Rules
 
-
 '''
     encodes a card using 8 (for number) + 4 (for color) bits
 '''
@@ -34,6 +33,7 @@ def one_hot_cards(cards):
   for card in cards:
     one_hot_cards[Rules().cards.index(card)] = 1
   return one_hot_cards
+
 
 def sample_player_hands(game_state, ego_player_hand, ego_player_id):
 

@@ -11,13 +11,8 @@ class SchafkopfEnv:
   def __init__(self, seed=None):
     self.gamestate = None
     self.player_cards = [None, None, None, None]
-    self.rewards = [0, 0, 0, 0]
     self.setSeed(seed)
 
-    # some logging counts
-    self.game_count = [0, 0, 0, 0]  # weiter, sauspiel, wenz, solo
-    self.won_game_count = [0, 0, 0, 0]
-    self.contra_retour = [0, 0]
 
   def reset(self):
 
@@ -107,7 +102,6 @@ class SchafkopfEnv:
     if self.gamestate.trick_number == 8:
       terminal = True
       rewards = self.get_rewards()
-      self.update_statistics(self.gamestate)
 
     return state, rewards, terminal
 
@@ -187,18 +181,6 @@ class SchafkopfEnv:
           rewards[player_id] = -reward
 
     return rewards
-
-  def update_statistics(self, game_state):
-      if game_state.game_type[1] == None:
-          self.game_count[0] += 1
-      else:
-          self.game_count[game_state.game_type[1] + 1] += 1
-          if self.get_rewards()[game_state.game_player] > 0:
-              self.won_game_count[game_state.game_type[1] + 1] += 1
-          if np.any(self.gamestate.contra):
-              self.contra_retour[0] += 1
-          if np.any(self.gamestate.retour):
-              self.contra_retour[1] += 1
 
   def setSeed(self, seed):
     if seed != None:

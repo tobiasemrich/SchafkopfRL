@@ -23,9 +23,9 @@ action layer: (9[games]+32[cards])    + value layer: 1
 softmax layer
 
 '''
-class ActorCriticNetworkLSTMContra(nn.Module):
+class ActorCriticNetworkLSTM(nn.Module):
     def __init__(self):
-        super(ActorCriticNetworkLSTMContra, self).__init__()
+        super(ActorCriticNetworkLSTM, self).__init__()
 
         self.hidden_neurons = 512
 

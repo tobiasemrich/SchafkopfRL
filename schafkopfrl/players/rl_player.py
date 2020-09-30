@@ -18,7 +18,7 @@ class RlPlayer(Player):
   def act(self, state):
 
     if self.action_shaping and state["game_state"].game_stage == Rules.BIDDING:
-      state["allowed_actions"] = self.game_selection_shaping(state["allowed_actions"], state["allowed_actions"])
+      state["allowed_actions"] = self.game_selection_shaping(state["curent_player_cards"], state["allowed_actions"])
 
     encoded_state = self.policy.preprocess(state)
 

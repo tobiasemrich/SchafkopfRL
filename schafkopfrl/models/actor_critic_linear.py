@@ -21,13 +21,13 @@ action layer: (9[games]+32[cards])    + value layer: 1
 softmax layer
 
 '''
-class ActorCriticNetworkLinearContra(nn.Module):
+class ActorCriticNetworkLinear(nn.Module):
     def __init__(self):
-        super(ActorCriticNetworkLinearContra, self).__init__()
+        super(ActorCriticNetworkLinear, self).__init__()
 
         self.hidden_neurons = 64
 
-        self.fc1 = nn.Linear(344, self.hidden_neurons)
+        self.fc1 = nn.Linear(342, self.hidden_neurons)
         self.fc2 = nn.Linear(self.hidden_neurons, self.hidden_neurons)
         self.fc3a = nn.Linear(self.hidden_neurons, self.hidden_neurons)
         self.fc3b = nn.Linear(self.hidden_neurons, self.hidden_neurons)
@@ -38,10 +38,11 @@ class ActorCriticNetworkLinearContra(nn.Module):
         self.device = Settings.device
 
 
-    def forward(self, state_vector, allowed_actions):
+    def forward(self, state_encoding):
 
+        [state_vector, allowed_actions] = state_encoding
         allowed_actions = allowed_actions.to(device=self.device).detach()
-        state_vector = state_vector[0]
+
 
         x = F.relu(self.fc1(state_vector))
         x = F.relu(self.fc2(x))
@@ -55,8 +56,8 @@ class ActorCriticNetworkLinearContra(nn.Module):
 
         return ax, bx
 
-    def evaluate(self, state_vector, allowed_actions, action):
-        action_probs, state_value = self(state_vector, allowed_actions)
+    def evaluate(self, state_encoding, action):
+        action_probs, state_value = self(state_encoding)
         dist = Categorical(action_probs)
 
         action_logprobs = dist.log_prob(action)
@@ -64,12 +65,12 @@ class ActorCriticNetworkLinearContra(nn.Module):
 
         return action_logprobs, torch.squeeze(state_value), dist_entropy
 
-    def preprocess(self, game_state, player):
+    def preprocess(self, state):
         """
         state_size:
-        - info_vector: 344
+        - info_vector: 342
           - game_stage: 11
-          - game_type: 8
+          - game_type: 7
           - game_player: 4
           - contra_retour: 8
           - first_player: 4
@@ -78,9 +79,19 @@ class ActorCriticNetworkLinearContra(nn.Module):
           - played cards by player: 4*32
           - current_trick: 4 * 36
 
+         action_size (43):
+         - games: 9
+         - contra/double: 2
+         - cards:  32
         """
 
-        ego_player = player.id
+
+        game_state = state["game_state"]
+        player_cards = state["curent_player_cards"]
+        allowed_actions = state["allowed_actions"]
+
+        ############### gamestate ##################
+        ego_player = game_state.current_player
 
         # game stage
         game_stage = np.zeros(11)
@@ -93,34 +104,23 @@ class ActorCriticNetworkLinearContra(nn.Module):
         else:
             game_stage[3 + game_state.trick_number] = 1
 
-        #game state
-        game_enc = one_hot_games([game_state.game_type])
+        game_enc = two_hot_encode_game(game_state.game_type)
 
-        #game player
         game_player_enc = np.zeros(4)
         if game_state.game_player != None:
-            game_player_enc[(game_state.game_player-ego_player)%4] = 1
+            game_player_enc[(game_state.game_player - ego_player) % 4] = 1
 
         contra_retour = np.zeros(8)
-        if len(game_state.contra_retour) >= 1:
-            contra_player = (game_state.contra_retour[0] - ego_player) % 4
-            contra_retour[contra_player] = 1
-        if len(game_state.contra_retour) >= 2:
-            retour_player = (game_state.contra_retour[1] - ego_player) % 4
-            contra_retour[retour_player] = 1
+        for p in range(4):
+            if game_state.contra[p]:
+                contra_retour[(p - ego_player) % 4] = 1
+        for p in range(4):
+            if game_state.retour[p]:
+                contra_retour[4 + (p - ego_player) % 4] = 1
 
         first_player_enc = np.zeros(4)
-        first_player_enc[(game_state.first_player-ego_player)%4] = 1
-        '''
-        team_encoding = np.zeros(4)
-        if game_state.get_player_team() != [None]:
-            player_team = [(t-ego_player)%4 for t in game_state.get_player_team()]
+        first_player_enc[(game_state.first_player - ego_player) % 4] = 1
 
-            if game_state.game_type[1] != 0 and len(player_team) == 1:
-                team_encoding[player_team] = 1
-            elif game_state.game_type[1] == 0 and len(player_team) == 2:
-                team_encoding[player_team] = 1
-        '''
         played_cards = np.zeros(32*4)
         for p in range(4):
             cards = [game_state.course_of_game[trick][p] for trick in range(8) if game_state.course_of_game[trick][p] != [None, None]]
@@ -147,7 +147,17 @@ class ActorCriticNetworkLinearContra(nn.Module):
 
                 current_trick_enc[card*36:(card+1)*36] = np.concatenate((card_enc, card_player_enc))
 
+        ############### allowed actions ##################
+        allowed_actions_enc = np.zeros(43)
+        if game_state.game_stage == Rules.BIDDING:
+            allowed_actions_enc[0:9] = one_hot_games(allowed_actions)
+        elif game_state.game_stage == Rules.CONTRA or game_state.game_stage == Rules.RETOUR:
+            allowed_actions_enc[10] = 1
+            if np.any(allowed_actions):
+                allowed_actions_enc[9] = 1
+        else:
+            allowed_actions_enc[11:] = one_hot_cards(allowed_actions)
 
-        state_vector = np.concatenate((game_stage, game_enc, game_player_enc,contra_retour, first_player_enc, np.true_divide(game_state.scores, 120), one_hot_cards(player.cards), played_cards,current_trick_enc))
+        state_vector = np.concatenate((game_stage, game_enc, game_player_enc,contra_retour, first_player_enc, np.true_divide(game_state.scores, 120), one_hot_cards(player_cards), played_cards,current_trick_enc))
 
-        return [torch.tensor(state_vector).float().to(device=self.device)]
+        return [torch.tensor(state_vector).float().to(device=self.device), torch.tensor(allowed_actions_enc).float().to(device=self.device)]

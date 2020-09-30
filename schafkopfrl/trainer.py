@@ -6,7 +6,7 @@ import torch
 
 from game_statistics import GameStatistics
 from memory import Memory
-from models.actor_critic_linear_contra import ActorCriticNetworkLinearContra
+from models.actor_critic_linear import ActorCriticNetworkLinear
 from schafkopf_env import SchafkopfEnv
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.random_player import RandomPlayer

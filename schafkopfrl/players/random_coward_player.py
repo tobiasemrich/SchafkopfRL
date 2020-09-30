@@ -6,42 +6,19 @@ import random
 
 class RandomCowardPlayer(Player):
   '''
-  Player that chooses a game (except solo) and cards randomly
+  Player that chooses actions randomly, except the game that he selects, where he will never select a solo
   '''
 
-  def call_game_type(self, game_state):
-    '''
-    Calls a game according to the following rules:
-    - randomly chooses between a Sauspiel and weiter!
+  def __init__(self):
+    super().__init__()
 
-    :param game_state: the current game state
-    :type game_state: game_state
-    :return: the game to play
-    :rtype: list
-    '''
-    allowed_games = self.rules.allowed_games(self.cards)
+  def act(self, state):
+    allowed_actions, gamestate = state["allowed_actions"],  state["game_state"]
 
-    allowed_games = [game for game in allowed_games if game in [[0, 0], [2, 0], [3, 0], [None, None]]]
+    if gamestate.game_stage == self.rules.BIDDING:
+      allowed_actions = [game for game in allowed_actions if game in [[0, 0], [2, 0], [3, 0], [None, None]]]
 
-    selected_game = random.choice(allowed_games)
+    selected_action = random.choice(allowed_actions)
+    return selected_action, 1
 
-    return selected_game, 1
-
-  def contra_retour(self, game_state):
-    return False, 1
-
-  def select_card(self, game_state):
-    selected_card = random.choice(self.rules.allowed_cards(game_state, self.id, self.cards, self.davongelaufen))
-
-    self.cards.remove(selected_card)
-    #Davonlaufen needs to be tracked
-    if game_state.game_type[1] == 0: # Sauspiel
-      first_player_of_trick = game_state.first_player if game_state.trick_number == 0 else game_state.trick_owner[game_state.trick_number - 1]
-      rufsau = [game_state.game_type[0],7]
-      if game_state.game_type[0] == selected_card[0] and selected_card != rufsau and first_player_of_trick == self.id and selected_card not in self.rules.get_sorted_trumps(game_state.game_type) and rufsau in self.cards:
-        self.davongelaufen = True
-    return selected_card, 1
-
-  def retrieve_reward(self, reward, game_state):
-    pass
 

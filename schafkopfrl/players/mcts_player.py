@@ -5,27 +5,22 @@ from schafkopfrl.players.player import Player
 
 class MCTSPlayer(Player):
 
-  def __init__(self, id, samples, playouts):
-    super().__init__(id)
+  def __init__(self, samples, playouts):
+    super().__init__()
     self.samples = samples
     self.playouts = playouts
 
 
-  def call_game_type(self, game_state):
-    return self.run_mcts(game_state), 1
+  def act(self, state):
+    return self.run_mcts(state("game_state"), state("current_player_cards"), state("allowed_actions")), 1
 
-  def contra_retour(self, game_state):
-    return self.run_mcts(game_state), 1
 
-  def select_card(self, game_state):
-    return self.run_mcts(game_state), 1
-
-  def run_mcts(self, game_state):
+  def run_mcts(self, game_state, player_cards, allowed_actions):
 
     cummulative_action_count_rewards = {}
 
     for i in range (self.samples):
-      sampled_player_hands = utils.sample_player_hands(game_state, self.cards, self.id)
+      sampled_player_hands = utils.sample_player_hands(game_state, player_cards)
       mct = MonteCarloTree(game_state,sampled_player_hands)
       mct.uct_search(self.playouts)
       action_count_rewards = mct.get_action_count_rewards()

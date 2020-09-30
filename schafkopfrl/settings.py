@@ -4,13 +4,10 @@ from os import path
 import torch
 
 from torch.utils.tensorboard import SummaryWriter
-import experience_dataset_lstm
-import experience_dataset_linear
-from models.actor_critic_gru import ActorCriticNetworkGRU
 from schafkopfrl.experience_dataset_linear import ExperienceDatasetLinear
 from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM
-from schafkopfrl.models.actor_critic_linear_contra import ActorCriticNetworkLinearContra
-from schafkopfrl.models.actor_critic_lstm_contra import ActorCriticNetworkLSTMContra
+from schafkopfrl.models.actor_critic_linear import ActorCriticNetworkLinear
+from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
 
 
 class Settings:
@@ -32,9 +29,8 @@ class Settings:
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
   # what model to use
-  #model, dataset = ActorCriticNetworkLinearContra,ExperienceDatasetLinear
-  #model, dataset = ActorCriticNetworkLSTMContra,ExperienceDatasetLSTM
-  model, dataset = ActorCriticNetworkGRU, ExperienceDatasetLSTM
+  #model, dataset = ActorCriticNetworkLinear,ExperienceDatasetLinear
+  model, dataset = ActorCriticNetworkLSTM, ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
   update_games = 10000  # update policy every n games

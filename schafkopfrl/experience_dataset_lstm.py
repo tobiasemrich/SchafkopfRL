@@ -4,11 +4,10 @@ from torch.utils import data
 class ExperienceDatasetLSTM(data.Dataset):
 
   'Characterizes a dataset for PyTorch'
-  def __init__(self, states, actions, allowed_actions, logprobs, rewards, num_sequences=1):
+  def __init__(self, states, actions, logprobs, rewards, num_sequences=2):
         'Initialization'
         self.states = states
         self.actions = actions
-        self.allowed_actions = allowed_actions
         self.logprobs = logprobs
         self.rewards = rewards
         self.num_sequences = num_sequences
@@ -21,11 +20,11 @@ class ExperienceDatasetLSTM(data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        return [self.states[index], self.actions[index], self.allowed_actions[index], self.logprobs[index], self.rewards[index]]
+        return [self.states[index], self.actions[index], self.logprobs[index], self.rewards[index]]
 
   def custom_collate(self, batch):
 
-      states_batch, actions_batch, allowed_actions_batch, logprobs_batch, rewards_batch = zip(*batch)
+      states_batch, actions_batch, logprobs_batch, rewards_batch = zip(*batch)
 
       # convert list to tensor
       # torch.stack(memory.states).to(device).detach()
@@ -44,9 +43,10 @@ class ExperienceDatasetLSTM(data.Dataset):
 
           states.append(packed_seq_batch)
 
+      states.append(torch.stack(transposed_states[3]).detach())
+
       actions = torch.stack(actions_batch).detach()
-      allowed_actions = torch.stack(allowed_actions_batch).detach()
       logprobs = torch.stack(logprobs_batch).detach()
       rewards = torch.tensor(rewards_batch)
 
-      return [states, actions, allowed_actions, logprobs, rewards]
+      return [states, actions, logprobs, rewards]

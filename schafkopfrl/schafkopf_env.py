@@ -1,10 +1,10 @@
-from random import random
+import random
 
 from public_gamestate import PublicGameState
 from rules import Rules
 import numpy as np
 
-class SchafkpfEnv:
+class SchafkopfEnv:
 
   rules = Rules()
 
@@ -12,6 +12,7 @@ class SchafkpfEnv:
     self.gamestate = None
     self.player_cards = [None, None, None, None]
     self.setSeed(seed)
+
 
   def reset(self):
 
@@ -31,17 +32,19 @@ class SchafkpfEnv:
     state["curent_player_cards"] = self.player_cards[self.gamestate.current_player]
     state["allowed_actions"] = self.rules.allowed_games(self.player_cards[self.gamestate.current_player])
 
-    return state, 0, False
+
+    return state, [0, 0, 0, 0], False
 
   def step(self, action, action_prob=1):
 
+    state = {}
 
     if self.gamestate.game_stage == Rules.BIDDING:
       self.gamestate.bidding_round[self.gamestate.current_player] = action
       self.gamestate.action_probabilities[0][self.gamestate.current_player] = action_prob
       self.gamestate.current_player = (self.gamestate.current_player+1)%4
       if self.gamestate.bidding_round[self.gamestate.current_player] != None:
-        self.gamestate.game_player, self.gamestate.game_player = self.rules.highest_game(self.gamestate.bidding_round)
+        self.gamestate.game_player, self.gamestate.game_type = self.rules.highest_game(self.gamestate.bidding_round, self.gamestate.first_player)
         self.gamestate.game_stage = Rules.CONTRA
 
     elif self.gamestate.game_stage == Rules.CONTRA:
@@ -55,7 +58,7 @@ class SchafkpfEnv:
 
     elif self.gamestate.game_stage == Rules.RETOUR:
       self.gamestate.retour[self.gamestate.current_player] = action
-      self.gamestate.action_probabilities[3][self.gamestate.current_player] = action_prob
+      self.gamestate.action_probabilities[2][self.gamestate.current_player] = action_prob
       self.gamestate.current_player = (self.gamestate.current_player + 1) % 4
       if self.gamestate.retour[self.gamestate.current_player] != None:
         self.gamestate.game_stage = Rules.TRICK
@@ -64,30 +67,43 @@ class SchafkpfEnv:
 
       self.gamestate.course_of_game_playerwise[self.gamestate.trick_number][self.gamestate.current_player] = action
       self.gamestate.course_of_game[self.gamestate.trick_number][self.gamestate.played_cards % 4] = action
-      self.played_cards += 1
+      self.gamestate.action_probabilities[3+self.gamestate.trick_number][self.gamestate.current_player] = action_prob
+      self.player_cards[self.gamestate.current_player].remove(action)
+      self.gamestate.played_cards += 1
       self.gamestate.current_player = (self.gamestate.current_player + 1) % 4
 
-      if self.played_cards % 4 == 0:  # trick complete
-        first_player = self.first_player if self.gamestate.trick_nr == 0 else self.self.gamestate.trick_owner[self.gamestate.trick_nr - 1]
-        trick_cards = self.gamestate.course_of_game_playerwise[self.gamestate.trick_nr]
-        trick_owner = self.highest_card(trick_cards,
+      if self.gamestate.played_cards % 4 == 0:  # trick complete
+        first_player = self.gamestate.first_player if self.gamestate.trick_number == 0 else self.gamestate.trick_owner[self.gamestate.trick_number - 1]
+        trick_cards = self.gamestate.course_of_game_playerwise[self.gamestate.trick_number]
+        trick_owner = self.rules.trick_owner(trick_cards,
                                         first_player,
                                         self.gamestate.game_type)
         self.gamestate.trick_owner[self.gamestate.trick_number] = trick_owner
-        self.gamestate.scores[trick_owner] += self.count_points(trick_cards)
-        self.trick_number += 1
+        self.gamestate.scores[trick_owner] += self.rules.count_points(trick_cards)
         self.gamestate.current_player = trick_owner
 
-    state = {}
+        # Davonlaufen needs to be tracked (after trick is complete such that no other player can use this information beforehand)
+        if self.gamestate.game_type[1] == 0:  # Sauspiel
+          first_player_of_trick = self.gamestate.first_player if self.gamestate.trick_number == 0 else self.gamestate.trick_owner[self.gamestate.trick_number - 1]
+          card_played = trick_cards[first_player_of_trick]
+          rufsau = [self.gamestate.game_type[0], 7]
+          if self.gamestate.game_type[0] == card_played[0] and card_played != rufsau and card_played not in self.rules.get_sorted_trumps(self.gamestate.game_type) and rufsau in self.player_cards[self.gamestate.current_player]:
+            self.gamestate.davongelaufen = first_player_of_trick
+
+        self.gamestate.trick_number += 1
+
+
     state["game_state"] = self.gamestate
+    state["allowed_actions"] = self.rules.allowed_actions(self.gamestate, self.player_cards[self.gamestate.current_player])
     state["curent_player_cards"] = self.player_cards[self.gamestate.current_player]
-    state["allowed_actions"] = self.rules.allowed_games(self.player_cards[self.gamestate.current_player])
 
     terminal = False
-    if self.trick_number == 8:
+    rewards = [0, 0, 0, 0]
+    if self.gamestate.trick_number == 8:
       terminal = True
+      rewards = self.get_rewards()
 
-    return state, 0, terminal
+    return state, rewards, terminal
 
   # return the number of points in trick
   #def count_points(self, trick):
@@ -100,11 +116,9 @@ class SchafkpfEnv:
         for player_id in range(4):
           if self.gamestate.course_of_game_playerwise[trick][player_id] == [self.gamestate.game_type[0], 7]:
             player_team.append(player_id)
-        # TODO: add davonlaufen (since this function is also used during a game to check if the teams are already known)
-
     return player_team
 
-  def getRewards(self):
+  def get_rewards(self):
     if self.gamestate.trick_number != 8:
       return None
 
@@ -148,7 +162,10 @@ class SchafkpfEnv:
       reward += laufende * self.rules.reward_laufende
 
     # contra/retour doubles
-    reward *= 2 ** len(self.gamestate.contra_retour)
+    if np.any(self.gamestate.contra):
+      reward *= 2
+    if np.any(self.gamestate.retour):
+      reward *= 2
 
     # calculate reward distribution
     if player_team_points <= self.rules.winning_thresholds[2]:
@@ -165,9 +182,77 @@ class SchafkpfEnv:
 
     return rewards
 
-
-
   def setSeed(self, seed):
     if seed != None:
       np.random.seed(seed)
       random.seed(seed)
+
+  def print_game(self):
+    br = "Bidding Round: "
+    for i in range(4):
+      if self.gamestate.first_player == i:
+        br += "(" + str(i) + "*)"
+      else:
+        br += "(" + str(i) + ")"
+      if self.gamestate.bidding_round[i][1] != None:
+        if self.gamestate.bidding_round[i][0] != None:
+          br += self.rules.card_color[self.gamestate.bidding_round[i][0]] + " "
+        br += self.rules.game_names[self.gamestate.bidding_round[i][1]] + " "
+      else:
+        br += "weiter! "
+      br += "[{:0.3f}]  ".format(self.gamestate.action_probabilities[0][i])
+    print(br + "\n")
+
+    played_game_str = "Played Game: "
+    if self.gamestate.game_type[1] != None:
+      if self.gamestate.game_type[0] != None:
+        played_game_str += self.rules.card_color[self.gamestate.game_type[0]] + " "
+      played_game_str += self.rules.game_names[self.gamestate.game_type[1]] + " "
+    else:
+      played_game_str += "no game "
+    print(played_game_str + "played by player: " + str(self.gamestate.game_player) + "\n")
+    contra_str = "Contra/Retour: "
+    for p in range(4):
+      if self.gamestate.contra[p]:
+        contra_str += "player " + str(p)
+        contra_str += "[{:0.3f}]".format(self.gamestate.action_probabilities[1][p])
+        contra_str += "  |   "
+    for p in range(4):
+      if self.gamestate.retour[p]:
+        contra_str += "player " + str(p)
+        contra_str += "[{:0.3f}]".format(self.gamestate.action_probabilities[2][p])
+        contra_str += "  |   "
+    print(contra_str + "\n")
+
+    if self.gamestate.game_type[1] != None:
+      print("Course of game")
+      for trick in range(8):
+        trick_str = ""
+        for player in range(4):
+          trick_str_ = "(" + str(player)
+          if (trick == 0 and self.gamestate.first_player == player) or (
+                  trick != 0 and self.gamestate.trick_owner[trick - 1] == player):
+            trick_str_ += "^"
+          if self.gamestate.trick_owner[trick] == player:
+            trick_str_ += "*"
+          trick_str_ += ")"
+
+          if self.gamestate.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
+                  self.gamestate.game_type):
+            trick_str_ += '\033[91m'
+
+          trick_str_ += self.rules.card_color[self.gamestate.course_of_game_playerwise[trick][player][0]] + " " + \
+                        self.rules.card_number[self.gamestate.course_of_game_playerwise[trick][player][1]]
+
+          trick_str_ += "[{:0.3f}]".format(self.gamestate.action_probabilities[trick + 3][player])
+          if self.gamestate.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
+                  self.gamestate.game_type):
+            trick_str_ += '\033[0m'
+            trick_str += trick_str_.ljust(39)
+          else:
+            trick_str += trick_str_.ljust(30)
+        print(trick_str)
+
+      print("\nScores: " + str(self.gamestate.scores) + "\n")
+    rewards = self.get_rewards()
+    print("Rewards: " + str(rewards))

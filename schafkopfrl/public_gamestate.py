@@ -1,5 +1,4 @@
 # contains information about the game that is known by all players
-import numpy as np
 from schafkopfrl.rules import Rules
 
 class PublicGameState:
@@ -35,3 +34,9 @@ class PublicGameState:
         self.trick_owner = [None] * 8
 
         self.scores = [0, 0, 0, 0]
+
+        #which player is davongelaufen
+        self.davongelaufen = None
+
+        # for debugging purposes remember probs for picking an action
+        self.action_probabilities = [[None for x in range(4)] for y in range(11)]

@@ -13,7 +13,6 @@ from schafkopfrl.players.random_player import RandomPlayer
 from schafkopfrl.players.rl_player import RlPlayer
 from schafkopfrl.players.rule_based_player import RuleBasedPlayer
 from schafkopfrl.ppo import PPO
-from schafkopfrl.schafkopf_game import SchafkopfGame
 
 from tensorboard import program
 

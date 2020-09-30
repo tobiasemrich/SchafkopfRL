@@ -1,5 +1,4 @@
 # contains information about the game that is known by all players
-import numpy as np
 from schafkopfrl.rules import Rules
 
 class PublicGameState:

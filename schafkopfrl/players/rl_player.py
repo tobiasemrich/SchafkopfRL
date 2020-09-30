@@ -1,4 +1,3 @@
-from schafkopfrl.gamestate import GameState
 from schafkopfrl.players.player import Player
 from schafkopfrl.rules import Rules
 import numpy as np
@@ -30,6 +29,7 @@ class RlPlayer(Player):
 
     action_prob = dist.probs[action].item()  # only for debugging purposes
 
+    # translate output from NN to interpretable action
     if action.item() < 9: # bidding round
       return self.rules.games[action], action_prob
     elif action.item() < 11: # contra or retour

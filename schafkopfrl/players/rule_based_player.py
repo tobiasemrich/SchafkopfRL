@@ -10,7 +10,7 @@ class RuleBasedPlayer(Player):
     super().__init__()
 
   def act(self, state):
-    allowed_actions, gamestate, player_cards = state["allowed_actions"], state["game_state"], state["curent_player_cards"]
+    allowed_actions, gamestate, player_cards = state["allowed_actions"], state["game_state"], state["current_player_cards"]
 
     if gamestate.game_stage == Rules.BIDDING:
       return self.call_game_type(player_cards, allowed_actions)

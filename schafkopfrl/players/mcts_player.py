@@ -16,7 +16,7 @@ class MCTSPlayer(Player):
 
 
   def act(self, state):
-    return self.run_mcts(state["game_state"], state["current_player_cards"]), 1
+    return self.run_mcts(state["game_state"], state["current_player_cards"])
 
 
   def run_mcts(self, game_state, player_cards):
@@ -25,7 +25,7 @@ class MCTSPlayer(Player):
 
     for i in range (self.samples):
       sampled_player_hands = self.sample_player_hands(game_state, player_cards)
-      mct = MonteCarloTree(game_state,sampled_player_hands, self.rules.allowed_actions(game_state, player_cards))
+      mct = MonteCarloTree(game_state,sampled_player_hands, self.rules.allowed_actions(game_state, player_cards), player=self.agent)
       mct.uct_search(self.playouts)
       action_count_rewards = mct.get_action_count_rewards()
 
@@ -37,9 +37,10 @@ class MCTSPlayer(Player):
           cummulative_action_count_rewards[action] = action_count_rewards[action]
 
     best_action = max(cummulative_action_count_rewards.items(), key=lambda x : x[1][0])[0]
+    visits = cummulative_action_count_rewards[best_action][0]
     if isinstance(best_action, tuple):
       best_action = list(best_action)
-    return best_action
+    return best_action, visits / sum([x[0] for x in cummulative_action_count_rewards.values()])
 
   def sample_player_hands(self, game_state, ego_player_hand):
 

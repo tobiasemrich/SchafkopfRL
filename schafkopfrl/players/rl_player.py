@@ -9,11 +9,12 @@ from schafkopfrl.utils import one_hot_games, one_hot_cards
 
 class RlPlayer(Player):
 
-  def __init__(self, policy, action_shaping=True):
+  def __init__(self, policy, action_shaping=True, eval=False):
     super().__init__()
     self.memory = Memory()
     self.policy = policy
     self.action_shaping = action_shaping
+    self.eval = eval
 
   def act(self, state):
 
@@ -23,15 +24,17 @@ class RlPlayer(Player):
     encoded_state = self.policy.preprocess(state)
 
     action_probs, value = self.policy(encoded_state)
-
     dist = Categorical(action_probs)
-    action = dist.sample()
+    if self.eval:# during evaluation select best action
+      action = torch.argmax(action_probs, 0)
+      #action = action.item()
+    else: #during training select action according to distribution
+      action = dist.sample()
+      self.memory.states.append([s.detach() for s in encoded_state])
+      self.memory.actions.append(action)
+      self.memory.logprobs.append(dist.log_prob(action).detach())
 
     action_prob = dist.probs[action].item()  # only for debugging purposes
-
-    self.memory.states.append([s.detach() for s in encoded_state])
-    self.memory.actions.append(action)
-    self.memory.logprobs.append(dist.log_prob(action).detach())
 
     # translate output from NN to interpretable action
     if state["game_state"].game_stage == Rules.BIDDING:

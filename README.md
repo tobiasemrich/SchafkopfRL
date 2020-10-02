@@ -101,6 +101,20 @@ This was necessary in previous versions because the first thing the agent learns
     - all players (including the game player) start playing colors and not trumps not sure why.
     - the team concept is not well understood: Agent sometimes plays higher trump than teammate. Agent does seldomly give points to certain trick of teammate.
 
+### Version 02.10.2020
+ - Added MCTS player (in particular Perfect Infromation Monte Carlo)
+  - at the current state do n times
+    - look for a possible card distribution of remaining cards to other players
+    - perform mcts m times with some agent (currently random but will add rlagent)
+  - take action with the highest cummulative count over the n runs
+ 
+ - Problems of MCTS player (good article: https://core.ac.uk/download/pdf/30267707.pdf)
+    - non-locality: "Non-locality is an issue that arises since history can matter in a hidden information game". Non-locality shows very clearly when an MCTS player is playing against another player X who chose to play a solo game. The MCTS player will then sample possible card distibutions and determine that this player X will often loose his solo game. Thus the MCTS player will usually double (contra) the game when someone plays a solo.
+    - strategy-fusion: could not find a good example for this in schafkopf so far.
+
+ - Ideas to improve MCTS player:
+   - icorporate the probability of a card distribution (probability of the players playing the cards they have played given the hand they have)
+   
 ## Resources
 - PPO Paper: https://arxiv.org/abs/1707.06347
 - Pytorch implementation of PPO: https://github.com/nikhilbarhate99/PPO-PyTorch

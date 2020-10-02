@@ -3,13 +3,12 @@ from schafkopfrl.rules import Rules
 
 class PublicGameState:
 
-    rules = Rules()
 
     def __init__(self, dealer):
         self.dealer = dealer
         self.first_player = (dealer + 1) % 4
 
-        self.game_stage = self.rules.BIDDING
+        self.game_stage = Rules.BIDDING
         self.game_type = [None, None]
         self.game_player = None
         self.trick_number = 0

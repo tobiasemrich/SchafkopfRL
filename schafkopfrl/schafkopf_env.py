@@ -29,7 +29,7 @@ class SchafkopfEnv:
 
     state = {}
     state["game_state"] = self.gamestate
-    state["curent_player_cards"] = self.player_cards[self.gamestate.current_player]
+    state["current_player_cards"] = self.player_cards[self.gamestate.current_player]
     state["allowed_actions"] = self.rules.allowed_games(self.player_cards[self.gamestate.current_player])
 
 
@@ -95,7 +95,7 @@ class SchafkopfEnv:
 
     state["game_state"] = self.gamestate
     state["allowed_actions"] = self.rules.allowed_actions(self.gamestate, self.player_cards[self.gamestate.current_player])
-    state["curent_player_cards"] = self.player_cards[self.gamestate.current_player]
+    state["current_player_cards"] = self.player_cards[self.gamestate.current_player]
 
     terminal = False
     rewards = [0, 0, 0, 0]
@@ -256,3 +256,18 @@ class SchafkopfEnv:
       print("\nScores: " + str(self.gamestate.scores) + "\n")
     rewards = self.get_rewards()
     print("Rewards: " + str(rewards))
+
+
+  def set_state(self, game_state, player_cards):
+
+    self.gamestate = game_state
+    self.player_cards = player_cards
+
+    state = {}
+    state["game_state"] = self.gamestate
+    state["current_player_cards"] = self.player_cards[self.gamestate.current_player]
+    state["allowed_actions"] = self.rules.allowed_actions(self.gamestate, self.player_cards[self.gamestate.current_player])
+    if self.gamestate.played_cards == 32:
+      return state, self.get_rewards(), True
+    else:
+      return state, [0, 0, 0, 0], False

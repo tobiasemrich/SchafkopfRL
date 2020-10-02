@@ -87,7 +87,7 @@ class ActorCriticNetworkLinear(nn.Module):
 
 
         game_state = state["game_state"]
-        player_cards = state["curent_player_cards"]
+        player_cards = state["current_player_cards"]
         allowed_actions = state["allowed_actions"]
 
         ############### gamestate ##################

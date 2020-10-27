@@ -4,8 +4,7 @@ from os import path
 import torch
 
 from torch.utils.tensorboard import SummaryWriter
-from schafkopfrl.experience_dataset_linear import ExperienceDatasetLinear
-from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM
+from schafkopfrl.dataset import ExperienceDatasetLinear, ExperienceDatasetLSTM
 from schafkopfrl.models.actor_critic_linear import ActorCriticNetworkLinear
 from schafkopfrl.models.actor_critic_lstm import ActorCriticNetworkLSTM
 
@@ -33,15 +32,15 @@ class Settings:
   model, dataset = ActorCriticNetworkLSTM, ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
-  update_games = 10000  # update policy every n games
+  update_games = 50  # update policy every n games
   batch_size = update_games * 22
-  mini_batch_size = 10000  # make this as large as possible to fit in gpu
+  mini_batch_size =  batch_size # make this as large as possible to fit in gpu
 
   eval_games = 500
   checkpoint_folder = "../policies"
 
   # lr = 0.0002
-  lr = 0.002
+  lr = 0.02
   lr_stepsize = 30000000  # 300000
   lr_gamma = 0.3
 

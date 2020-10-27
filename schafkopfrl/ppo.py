@@ -4,10 +4,6 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import StepLR
 
 from torch.utils import data
-from torch.utils.tensorboard import SummaryWriter
-from schafkopfrl import experience_dataset_linear, experience_dataset_lstm
-from schafkopfrl.experience_dataset_lstm import ExperienceDatasetLSTM
-from schafkopfrl.experience_dataset_linear import ExperienceDatasetLinear
 from settings import Settings
 
 

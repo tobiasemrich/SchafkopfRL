@@ -102,12 +102,20 @@ This was necessary in previous versions because the first thing the agent learns
     - the team concept is not well understood: Agent sometimes plays higher trump than teammate. Agent does seldomly give points to certain trick of teammate.
 
 ### Version 02.10.2020
+ - Added Contra and Retour
  - Added MCTS player (in particular Perfect Infromation Monte Carlo)
-  - at the current state do n times
-    - look for a possible card distribution of remaining cards to other players
-    - perform mcts m times with some agent (currently random but will add rlagent)
-  - take action with the highest cummulative count over the n runs
- 
+    - at the current state do n times
+      - look for a possible card distribution of remaining cards to other players
+      - perform mcts m times with some agent (currently random but will add rlagent)
+    - take action with the highest cummulative count over the n runs
+ - MCTS Player performs unfortunately much better than expected. Tournament with 4 players for 1000 games resulted in the following per game rewards
+    <table>
+        <tr><td>MCTS_Player(5, 20)</td><td>-9.24</td></tr>
+        <tr><td>MCTS_Player(10, 40)</td><td>12.6</td></tr>
+        <tr><td>MCTS_Player(10, 100)</td><td>13.78</td></tr>
+        <tr><td>RLPLayer</td><td>-17.14</td></tr>
+    </table>
+    
  - Problems of MCTS player (good article: https://core.ac.uk/download/pdf/30267707.pdf)
     - non-locality: "Non-locality is an issue that arises since history can matter in a hidden information game". Non-locality shows very clearly when an MCTS player is playing against another player X who chose to play a solo game. The MCTS player will then sample possible card distibutions and determine that this player X will often loose his solo game. Thus the MCTS player will usually double (contra) the game when someone plays a solo.
     - strategy-fusion: could not find a good example for this in schafkopf so far.

@@ -49,8 +49,7 @@ class SmartMCTSPlayer(Player):
       best_action = list(best_action)
     return best_action, visits / sum([x[0] for x in cummulative_action_count_rewards.values()])
 
-  def sample_player_hands(self, game_state, ego_player_hand, card_probabilities):
-
+  def sample_player_hands(self, game_state, ego_player_hand, card_probabilities, only_valid = False):
 
     # precomputations
     played_cards = [card for trick in game_state.course_of_game for card in trick if card != [None, None]]
@@ -76,8 +75,9 @@ class SmartMCTSPlayer(Player):
 
 
     # loop over random card distributions until we found a valid one
+    count = 0
     while not valid_card_distribution:
-
+      count += 1
       # randomly distribute cards so that each player gets as many as he needs
       valid_card_distribution = True
       player_cards = [[], [], [], []]
@@ -88,7 +88,7 @@ class SmartMCTSPlayer(Player):
         card_index = self.rules.cards.index(card)
         dist = Categorical(card_probabilities[card_index])
         while True:
-          player_id = (game_state.current_player + dist.sample()) % 4
+          player_id = (game_state.current_player + dist.sample()+1) % 4
           if len(player_cards[player_id]) < needed_player_cards[player_id]:
             player_cards[player_id].append(card)
             break
@@ -100,36 +100,44 @@ class SmartMCTSPlayer(Player):
       #  player_cards[i] = remaining_cards[from_card:from_card + nededed_cards]
       #  from_card += nededed_cards
 
+      if not only_valid:
+        break
+
       # check if with the current card distribution every made move was valid
+
       schafkopf_env = SchafkopfEnv()
-      state, _, _ = schafkopf_env.set_state(PublicGameState(game_state.dealer), player_cards)
+      simulation_player_cards = [player_hand.copy() for player_hand in player_cards]
+      for i in range(4):
+        simulation_player_cards[i] += [game_state.course_of_game_playerwise[trick][i] for trick in range(8) if game_state.course_of_game_playerwise[trick][i] != [None, None]]
+
+      state, _, _ = schafkopf_env.set_state(PublicGameState(game_state.dealer), simulation_player_cards)
 
       while True:
         eval_game_state, allowed_actions = state["game_state"], state["allowed_actions"]
 
         if eval_game_state.game_stage == Rules.BIDDING:
-          action = eval_game_state.bidding_round[eval_game_state.current_player]
+          action = game_state.bidding_round[eval_game_state.current_player]
           if action == None:
             break
           elif action not in allowed_actions:
             valid_card_distribution = False
             break
         elif eval_game_state.game_stage == Rules.CONTRA:
-          action = eval_game_state.contra[eval_game_state.current_player]
+          action = game_state.contra[eval_game_state.current_player]
           if action == None:
             break
           elif action not in allowed_actions:
             valid_card_distribution = False
             break
         elif eval_game_state.game_stage == Rules.RETOUR:
-          action = eval_game_state.retour[eval_game_state.current_player]
+          action = game_state.retour[eval_game_state.current_player]
           if action == None:
             break
           elif action not in allowed_actions:
             valid_card_distribution = False
             break
         else:
-          action = eval_game_state.course_of_game_playerwise[eval_game_state.trick_number][
+          action = game_state.course_of_game_playerwise[eval_game_state.trick_number][
             eval_game_state.current_player]
           if action == [None, None]:
             break
@@ -137,5 +145,4 @@ class SmartMCTSPlayer(Player):
             valid_card_distribution = False
             break
         state, _, _ = schafkopf_env.step(action)
-
     return player_cards

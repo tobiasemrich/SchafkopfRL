@@ -52,4 +52,4 @@ class Settings:
 
   optimizer_weight_decay = 1e-5
 
-  random_seed = None
+  random_seed = 1

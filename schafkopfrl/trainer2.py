@@ -63,9 +63,11 @@ def main():
     t0 = time.time()
     for _ in range(Settings.update_games):
       state, reward, terminal = schafkopf_env.reset()
+
       while not terminal:
         memory_states.append(hand_predictor.preprocess(state)) #TODO: happens twice now and could be optimized
         memory_player_hands.append(hand_predictor.encode_player_hands(schafkopf_env.player_cards, state["game_state"].current_player))
+
         action, prob = players[state["game_state"].current_player].act(state)
         state, reward, terminal = schafkopf_env.step(action, prob)
       print("game "+str(i_episode))
@@ -94,7 +96,7 @@ def main():
         states = [state.to(Settings.device) for state in states]
         hands = hands.to(Settings.device)
         pred = hand_predictor(states)
-        loss = nn.MSELoss()(pred, hands)
+        loss = nn.MSELoss()(pred, hands) #TODO: replace by cross entropy
 
         avg_loss += loss.mean().item()
         count +=1

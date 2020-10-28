@@ -129,3 +129,5 @@ This was necessary in previous versions because the first thing the agent learns
 - PPO parameter ranges: https://github.com/Unity-Technologies/ml-agents/blob/master/docs/Training-PPO.md
 - Another card game (Big2) tackled using RL with PPO: https://github.com/henrycharlesworth/big2_PPOalgorithm/
 - Nice overview paper AI for card games: https://arxiv.org/pdf/1906.04439.pdf
+- MCTS for imperfect information games https://core.ac.uk/download/pdf/30267707.pdf
+- DL model for predicting opponent hands for PIMC https://www.aaai.org/ojs/index.php/AAAI/article/view/3909/3787

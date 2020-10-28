@@ -51,7 +51,7 @@ class HandPredictor(nn.Module):
 
         x = torch.cat((torch.squeeze(x), torch.squeeze(h2_)), -1)
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = self.fc3(x)
 
         x = torch.reshape(x, (-1, 32, 4))
 

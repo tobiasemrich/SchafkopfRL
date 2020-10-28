@@ -47,7 +47,7 @@ class MonteCarloTree:
     schafkopf_env.set_state(deepcopy(node.game_state), deepcopy(node.player_hands))
     state, _, terminal = schafkopf_env.step(chosen_action)
 
-    new_node = Node(parent=node, game_state=deepcopy(state["game_state"]), previous_action=chosen_action, player_hands=deepcopy(schafkopf_env.player_cards), allowed_actions=state["allowed_actions"])
+    new_node = Node(parent=node, game_state=state["game_state"], previous_action=chosen_action, player_hands=schafkopf_env.player_cards, allowed_actions=state["allowed_actions"])
     node.add_child(child_node=new_node)
     return new_node
 

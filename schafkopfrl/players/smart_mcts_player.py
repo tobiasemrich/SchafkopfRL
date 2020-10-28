@@ -86,9 +86,18 @@ class SmartMCTSPlayer(Player):
 
       for card in remaining_cards:
         card_index = self.rules.cards.index(card)
-        dist = Categorical(card_probabilities[card_index])
+
+        card_probs = card_probabilities[card_index].clone().detach()
+        for p in range(4):
+          index = (p - game_state.current_player - 1) % 4
+          if len(player_cards[p]) >= needed_player_cards[p]:
+            card_probs[index] = 0
+
+        dist = Categorical(card_probs)
         while True:
+
           player_id = (game_state.current_player + dist.sample()+1) % 4
+
           if len(player_cards[player_id]) < needed_player_cards[player_id]:
             player_cards[player_id].append(card)
             break

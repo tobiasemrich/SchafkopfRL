@@ -11,8 +11,8 @@ from game_statistics import GameStatistics
 from models.hand_predictor import HandPredictor
 from players.smart_mcts_player import SmartMCTSPlayer
 from schafkopf_env import SchafkopfEnv
-from schafkopfrl.players.random_player import RandomPlayer
-from schafkopfrl.players.rl_player import RlPlayer
+from players.random_player import RandomPlayer
+from players.rl_player import RlPlayer
 
 from tensorboard import program
 
@@ -70,9 +70,11 @@ def main():
 
         action, prob = players[state["game_state"].current_player].act(state)
         state, reward, terminal = schafkopf_env.step(action, prob)
+
       print("game "+str(i_episode))
       i_episode += 1
       game_statistics.update_statistics(state["game_state"], reward)
+      #return None
     t1 = time.time()
 
     #update the policy
@@ -96,7 +98,8 @@ def main():
         states = [state.to(Settings.device) for state in states]
         hands = hands.to(Settings.device)
         pred = hand_predictor(states)
-        loss = nn.MSELoss()(pred, hands) #TODO: replace by cross entropy
+        #loss = nn.MSELoss()(pred, hands) #TODO: replace by cross entropy
+        loss = nn.BCELoss()(pred, hands)
 
         avg_loss += loss.mean().item()
         count +=1
@@ -163,4 +166,11 @@ def play_against_other_players(checkpoint_folder, model_class, other_player_clas
 
 
 if __name__ == '__main__':
+  import cProfile
+
+  pr = cProfile.Profile()
+  pr.enable()
   main()
+  pr.disable()
+  # after your program ends
+  pr.print_stats(sort="cumtime")

@@ -188,19 +188,29 @@ class SchafkopfEnv:
       random.seed(seed)
 
   def print_game(self):
-    br = "Bidding Round: "
+
+    br = ""
+    #only print player cards when game is not finished
+    if self.gamestate.trick_number != 8:
+      for p in range(4):
+        br += "Player "+ str(p) +" cards: "+ str(self.player_cards[p]) + " \n"
+
+    br += "Bidding Round: "
     for i in range(4):
       if self.gamestate.first_player == i:
-        br += "(" + str(i) + "*)"
+        br += "(" + str(i) + "^)"
       else:
         br += "(" + str(i) + ")"
-      if self.gamestate.bidding_round[i][1] != None:
-        if self.gamestate.bidding_round[i][0] != None:
-          br += self.rules.card_color[self.gamestate.bidding_round[i][0]] + " "
-        br += self.rules.game_names[self.gamestate.bidding_round[i][1]] + " "
+      if self.gamestate.bidding_round[i] is None:
+        br += "None "
       else:
-        br += "weiter! "
-      br += "[{:0.3f}]  ".format(self.gamestate.action_probabilities[0][i])
+        if self.gamestate.bidding_round[i][1] != None:
+          if self.gamestate.bidding_round[i][0] != None:
+            br += self.rules.card_color[self.gamestate.bidding_round[i][0]] + " "
+          br += self.rules.game_names[self.gamestate.bidding_round[i][1]] + " "
+        else:
+          br += "weiter! "
+        br += "[{:0.3f}]  ".format(self.gamestate.action_probabilities[0][i])
     print(br + "\n")
 
     played_game_str = "Played Game: "
@@ -237,20 +247,23 @@ class SchafkopfEnv:
             trick_str_ += "*"
           trick_str_ += ")"
 
-          if self.gamestate.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
-                  self.gamestate.game_type):
-            trick_str_ += '\033[91m'
-
-          trick_str_ += self.rules.card_color[self.gamestate.course_of_game_playerwise[trick][player][0]] + " " + \
-                        self.rules.card_number[self.gamestate.course_of_game_playerwise[trick][player][1]]
-
-          trick_str_ += "[{:0.3f}]".format(self.gamestate.action_probabilities[trick + 3][player])
-          if self.gamestate.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
-                  self.gamestate.game_type):
-            trick_str_ += '\033[0m'
-            trick_str += trick_str_.ljust(39)
+          if self.gamestate.course_of_game_playerwise[trick][player] == [None, None]:
+            trick_str_ += "None"
           else:
-            trick_str += trick_str_.ljust(30)
+            if self.gamestate.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
+                    self.gamestate.game_type):
+              trick_str_ += '\033[91m'
+
+            trick_str_ += self.rules.card_color[self.gamestate.course_of_game_playerwise[trick][player][0]] + " " + \
+                          self.rules.card_number[self.gamestate.course_of_game_playerwise[trick][player][1]]
+
+            trick_str_ += "[{:0.3f}]".format(self.gamestate.action_probabilities[trick + 3][player])
+            if self.gamestate.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
+                    self.gamestate.game_type):
+              trick_str_ += '\033[0m'
+              trick_str += trick_str_.ljust(39)
+            else:
+              trick_str += trick_str_.ljust(30)
         print(trick_str)
 
       print("\nScores: " + str(self.gamestate.scores) + "\n")

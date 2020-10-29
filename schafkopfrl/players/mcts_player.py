@@ -3,7 +3,7 @@ from players.mcts.mct import MonteCarloTree
 from public_gamestate import PublicGameState
 from rules import Rules
 from schafkopf_env import SchafkopfEnv
-from schafkopfrl.players.player import Player
+from players.player import Player
 import random
 
 class MCTSPlayer(Player):

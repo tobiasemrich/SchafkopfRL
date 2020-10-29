@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 
 from rules import Rules
-from schafkopfrl.utils import two_hot_encode_game, one_hot_cards, one_hot_games
+from utils import two_hot_encode_game, one_hot_cards, one_hot_games
 
 '''
 The network should have the following form

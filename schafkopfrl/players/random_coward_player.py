@@ -1,6 +1,5 @@
-from schafkopfrl.players.player import Player
-from schafkopfrl.rules import Rules
-from schafkopfrl.memory import Memory
+from players.player import Player
+
 import random
 
 

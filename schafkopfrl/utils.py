@@ -4,7 +4,7 @@ import numpy as np
 
 from public_gamestate import PublicGameState
 from schafkopf_env import SchafkopfEnv
-from schafkopfrl.rules import Rules
+from rules import Rules
 
 '''
     encodes a card using 8 (for number) + 4 (for color) bits

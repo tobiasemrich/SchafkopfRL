@@ -1,5 +1,7 @@
 # contains information about the game that is known by all players
-from schafkopfrl.rules import Rules
+from copy import copy
+
+from rules import Rules
 
 class PublicGameState:
 

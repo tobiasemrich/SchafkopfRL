@@ -1,10 +1,10 @@
-from schafkopfrl.players.player import Player
-from schafkopfrl.rules import Rules
+from players.player import Player
+from rules import Rules
 import numpy as np
 import torch
 from torch.distributions import Categorical
-from schafkopfrl.memory import Memory
-from schafkopfrl.utils import one_hot_games, one_hot_cards
+from memory import Memory
+from utils import one_hot_games, one_hot_cards
 
 
 class RlPlayer(Player):

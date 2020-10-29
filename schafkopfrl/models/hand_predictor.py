@@ -6,7 +6,7 @@ from torch.autograd import Variable
 from torch.distributions import Categorical
 
 from rules import Rules
-from schafkopfrl.utils import two_hot_encode_game, two_hot_encode_card, one_hot_cards, one_hot_games
+from utils import two_hot_encode_game, two_hot_encode_card, one_hot_cards, one_hot_games
 
 
 '''

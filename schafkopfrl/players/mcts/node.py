@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 class Node:
@@ -50,7 +52,7 @@ class Node:
   def ucb_value(self, ucb_const):
     if self.visits != 0:
       average_reward = self.get_average_reward(player=self.parent.game_state.current_player)
-      return average_reward + ucb_const * np.sqrt(2 * np.log(self.parent.visits) / self.visits)
+      return average_reward + ucb_const * math.sqrt(2 * math.log(self.parent.visits) / self.visits)
     else:
       return np.infty
 

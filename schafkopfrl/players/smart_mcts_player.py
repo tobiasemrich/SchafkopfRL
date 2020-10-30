@@ -29,8 +29,27 @@ class SmartMCTSPlayer(Player):
 
     cummulative_action_count_rewards = {}
 
+    # precomputations for sample player hands ----------------------------
+    played_cards = [card for trick in game_state.course_of_game for card in trick if card != [None, None]]
+    remaining_cards = [card for card in self.rules.cards if
+                       ((card not in played_cards) and (card not in player_cards))]
+
+    needed_player_cards = [8, 8, 8, 8]
+
+    for trick in range(game_state.trick_number + 1):
+      for i, card in enumerate(game_state.course_of_game_playerwise[trick]):
+        if card != [None, None]:
+          needed_player_cards[i] -= 1
+
+    needed_player_cards[game_state.current_player] = 0
+
+    for i in range(32):
+      if self.rules.cards[i] not in remaining_cards:
+        card_probabilities[i, 3] = 0
+    # --------------------------------------------------------------------
+
     for i in range (self.samples):
-      sampled_player_hands = self.sample_player_hands(game_state, player_cards, card_probabilities)
+      sampled_player_hands = self.sample_player_hands(game_state, player_cards, card_probabilities, remaining_cards, needed_player_cards)
       mct = MonteCarloTree(game_state,sampled_player_hands, self.rules.allowed_actions(game_state, player_cards), player=self.agent)
       mct.uct_search(self.playouts)
       action_count_rewards = mct.get_action_count_rewards()
@@ -48,35 +67,15 @@ class SmartMCTSPlayer(Player):
       best_action = list(best_action)
     return best_action, visits / sum([x[0] for x in cummulative_action_count_rewards.values()])
 
-  def sample_player_hands(self, game_state, ego_player_hand, card_probabilities, only_valid = False):
+  def sample_player_hands(self, game_state, ego_player_hand, card_probabilities, remaining_cards, needed_player_cards, only_valid = False):
 
-    # precomputations
-    played_cards = [card for trick in game_state.course_of_game for card in trick if card != [None, None]]
-    remaining_cards = [card for card in self.rules.cards if ((card not in played_cards) and (card not in ego_player_hand))]
-
-    needed_player_cards = [8, 8, 8, 8]
-
-    for trick in range(game_state.trick_number + 1):
-      for i, card in enumerate(game_state.course_of_game_playerwise[trick]):
-        if card != [None, None]:
-          needed_player_cards[i] -= 1
-
-    needed_player_cards[game_state.current_player] = 0
 
     valid_card_distribution = False
     player_cards = None
 
-    #calculate card probabilities given the current state
-
-    for i in range(32):
-      if self.rules.cards[i] not in remaining_cards:
-        card_probabilities[i, 3] = 0
-
 
     # loop over random card distributions until we found a valid one
-    count = 0
     while not valid_card_distribution:
-      count += 1
       # randomly distribute cards so that each player gets as many as he needs
       valid_card_distribution = True
       player_cards = [[], [], [], []]
@@ -93,13 +92,13 @@ class SmartMCTSPlayer(Player):
             card_probs[index] = 0
 
         dist = Categorical(card_probs)
-        while True:
+        #while True:
 
-          player_id = (game_state.current_player + dist.sample()+1) % 4
+        player_id = (game_state.current_player + dist.sample()+1) % 4
 
-          if len(player_cards[player_id]) < needed_player_cards[player_id]:
-            player_cards[player_id].append(card)
-            break
+          #if len(player_cards[player_id]) < needed_player_cards[player_id]:
+        player_cards[player_id].append(card)
+            #break
 
       #from_card = 0
       #for i, nededed_cards in enumerate(needed_player_cards):
@@ -107,7 +106,6 @@ class SmartMCTSPlayer(Player):
       #    continue
       #  player_cards[i] = remaining_cards[from_card:from_card + nededed_cards]
       #  from_card += nededed_cards
-
       if not only_valid:
         break
 

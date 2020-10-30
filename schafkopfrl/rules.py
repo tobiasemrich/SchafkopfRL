@@ -88,21 +88,31 @@ class Rules:
         :rtype: list
         """
         if game_type[1] == 0:  # Sauspiel
-            trump_colors = [1]  # Herz
-            trump_numbers = [3, 4]  # Unter, Ober
+            #trump_colors = [1]  # Herz
+            #trump_numbers = [3, 4]  # Unter, Ober
+            trumps = [[1, 0], [1, 1], [1, 2], [1, 5], [1, 6], [1, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4], [3, 4]]
 
         elif game_type[1] == 2:  # Solo
-            trump_colors = [game_type[0]]
-            trump_numbers = [3, 4]
+            #trump_colors = [game_type[0]]
+            #trump_numbers = [3, 4]
+            if game_type[0] == 0:
+                trumps = [[0, 0], [0, 1], [0, 2], [0, 5], [0, 6], [0, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4],[3, 4]]
+            elif game_type[0] == 1:
+                trumps = [[1, 0], [1, 1], [1, 2], [1, 5], [1, 6], [1, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4], [3, 4]]
+            elif game_type[0] == 2:
+                trumps = [[2, 0], [2, 1], [2, 2], [2, 5], [2, 6], [2, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4], [3, 4]]
+            elif game_type[0] == 3:
+                trumps = [[3, 0], [3, 1], [3, 2], [3, 5], [3, 6], [3, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4], [3, 4]]
         else:  # wenz
-            trump_colors = []
-            trump_numbers = [3]
+            #trump_colors = []
+            #trump_numbers = [3]
+            trumps = [[0, 3], [1, 3], [2, 3], [3, 3]]
 
-        trumps_color = [[color, number] for color, number in self.cards if
-                        color in trump_colors and number not in trump_numbers]
-        trumps_number = [[color, number] for color, number in self.cards if number in trump_numbers]
+        #trumps_color = [[color, number] for color, number in self.cards if color in trump_colors and number not in trump_numbers]
+        #trumps_number = [[color, number] for color, number in self.cards if number in trump_numbers]
 
-        return trumps_color + trumps_number
+        #return trumps_color + trumps_number
+        return trumps
 
 
     def allowed_actions(self, game_state, player_cards):

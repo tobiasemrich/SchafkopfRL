@@ -3,7 +3,8 @@ import random
 from players.mcts.node import Node
 from players.random_player import RandomPlayer
 from schafkopf_env import SchafkopfEnv
-from copy import deepcopy
+from copy import deepcopy, copy
+
 
 class MonteCarloTree:
   '''
@@ -36,7 +37,7 @@ class MonteCarloTree:
     return current_node
 
   def expand(self, node):
-    not_visited_actions = deepcopy(node.allowed_actions)
+    not_visited_actions = copy(node.allowed_actions)
     for child in node.children:
       not_visited_actions.remove(child.previous_action)
 
@@ -44,7 +45,7 @@ class MonteCarloTree:
     chosen_action = random.choice(tuple(not_visited_actions))
 
     schafkopf_env = SchafkopfEnv()
-    schafkopf_env.set_state(deepcopy(node.game_state), deepcopy(node.player_hands))
+    schafkopf_env.set_state(deepcopy(node.game_state), [copy(node.player_hands[i]) for i in range(4)])
     state, _, terminal = schafkopf_env.step(chosen_action)
 
     new_node = Node(parent=node, game_state=state["game_state"], previous_action=chosen_action, player_hands=schafkopf_env.player_cards, allowed_actions=state["allowed_actions"])
@@ -54,8 +55,10 @@ class MonteCarloTree:
   def simulation(self, selected_node):
 
     schafkopf_env = SchafkopfEnv()
-    state, reward, terminal = schafkopf_env.set_state(deepcopy(selected_node.game_state), deepcopy(selected_node.player_hands))
 
+    #state, reward, terminal = schafkopf_env.set_state(deepcopy(selected_node.game_state), deepcopy(selected_node.player_hands))
+    state, reward, terminal = schafkopf_env.set_state(deepcopy(selected_node.game_state),
+                                                      [copy(selected_node.player_hands[i]) for i in range(4)])
     while not terminal:
       action, _ = self.player.act(state)
       state, reward, terminal = schafkopf_env.step(action)

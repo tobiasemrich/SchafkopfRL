@@ -128,7 +128,8 @@ class SchafkopfEnv:
       return rewards
 
     player_team_points = 0
-    for player_id in self.get_player_team():
+    player_team = self.get_player_team()
+    for player_id in player_team:
       player_team_points += self.gamestate.scores[player_id]
 
     # basic reward
@@ -145,7 +146,7 @@ class SchafkopfEnv:
     # add Laufende
     laufende = 0
     joint_player_team_cards = []
-    for p in self.get_player_team():
+    for p in player_team:
       joint_player_team_cards += [i[p] for i in self.gamestate.course_of_game_playerwise]
     for trump in reversed(self.rules.get_sorted_trumps(self.gamestate.game_type)):
       if trump in joint_player_team_cards:
@@ -175,7 +176,7 @@ class SchafkopfEnv:
       rewards[self.gamestate.game_player] = 3 * reward
     else:
       for player_id in range(4):
-        if player_id in self.get_player_team():
+        if player_id in player_team:
           rewards[player_id] = reward
         else:
           rewards[player_id] = -reward

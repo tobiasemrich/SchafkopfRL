@@ -41,3 +41,27 @@ class PublicGameState:
 
         # for debugging purposes remember probs for picking an action
         self.action_probabilities = [[None for x in range(4)] for y in range(11)]
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+
+        result.dealer = self.dealer
+        result.first_player = self.first_player
+        result.game_stage = self.game_stage
+        result.game_type = self.game_type
+        result.game_player = self.game_player
+        result.trick_number = self.trick_number
+        result.played_cards = self.played_cards
+        result.current_player = self.current_player
+        result.bidding_round = copy(self.bidding_round)
+        result.contra = copy(self.contra)
+        result.retour = copy(self.retour)
+        result.course_of_game_playerwise = [copy(self.course_of_game_playerwise[y]) for y in range(8)]
+        result.course_of_game = [copy(self.course_of_game[y]) for y in range(8)]
+        result.trick_owner = copy(self.trick_owner)
+        result.scores = copy(self.scores)
+        result.davongelaufen = self.davongelaufen
+        result.action_probabilities = self.action_probabilities
+
+        return result

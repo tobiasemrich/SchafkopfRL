@@ -6,6 +6,7 @@ from rules import Rules
 from schafkopf_env import SchafkopfEnv
 from players.player import Player
 import random
+import numpy as np
 
 class SmartMCTSPlayer(Player):
 
@@ -82,23 +83,25 @@ class SmartMCTSPlayer(Player):
       player_cards[game_state.current_player] = ego_player_hand
       random.shuffle(remaining_cards)
 
+      card_probs = card_probabilities.clone().detach().cpu()
+
+      for p in range(4):
+        index = (p - game_state.current_player - 1) % 4
+        if len(player_cards[p]) >= needed_player_cards[p]:
+          card_probs[:, index] = 0
+
       for card in remaining_cards:
-        card_index = self.rules.cards.index(card)
+        card_index = card[1] * 4 + card[0] #self.rules.cards.index(card)
 
-        card_probs = card_probabilities[card_index].clone().detach()
-        for p in range(4):
-          index = (p - game_state.current_player - 1) % 4
-          if len(player_cards[p]) >= needed_player_cards[p]:
-            card_probs[index] = 0
+        sample_player = Categorical(card_probs[card_index]).sample()
 
-        dist = Categorical(card_probs)
-        #while True:
-
-        player_id = (game_state.current_player + dist.sample()+1) % 4
-
-          #if len(player_cards[player_id]) < needed_player_cards[player_id]:
+        player_id = (game_state.current_player + sample_player+1) % 4
         player_cards[player_id].append(card)
-            #break
+
+        if len(player_cards[player_id]) == needed_player_cards[player_id]:
+          card_probs[:, sample_player] = 0
+
+
 
       #from_card = 0
       #for i, nededed_cards in enumerate(needed_player_cards):

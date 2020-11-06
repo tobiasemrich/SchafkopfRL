@@ -1,6 +1,20 @@
 # SchafkopfRL
 
-Training a reinforcement learning agent to play the four player card game Schafkopfen. Uses an Actor-Critic Network and proximal policy optimization for training.
+Developing an AI agent for play the bavarian four-player card game Schafkopfen. The main components of this repo are:
+- <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopfen. See Schafkopf Rules for the supported rule set.
+- <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
+  - PPO Agent: RL Agent trained with proximal policy optimization.
+    - Linear: Using a 1D vector state representation of the current game state and an Actor-Critic Network that has a linear input layer.
+    - LSTM: Using a complex state representation (e.g., representing played cards as sequences) and an Actor-Critic Network that also hast LSTM input layers.
+  - PIMC Agents: Using Monte-Carlo-Tree Search for this imperfect information game. Samples opponent hands several times and performs MCTS on each instance.
+    - Vanilla: Random sampling of opponent hands
+    - Hand-Predictor: utilizes a neural network for predicting card distribution amongst opponents. Trained by self-play.
+  - Simple Agents: Agents with simple hard-coded rules
+    - Random: performs each action random (only valid actions)
+    - Random-Coward: performs each action random, but never plays a solo and never doubles the game.
+    - Rule-based: Plays solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
+- <b>Trainer:</b>  Trainer class for training the model based-players
+
 
 ## Schafkopf Rules
 Schafkopf is a traditional bavarian 4 player trick based card game with imperfect information. It has both competetive and cooperative game elements.
@@ -12,11 +26,19 @@ In this project I will focus on the following rules:
 - Allowed Games: Sauspiel, Farbsolo, Wenz
 - Tariffs: 20 for Sauspiel, 50 for Solo, 10 for Schneider/Schwarz or Laufende starting from 3 (from 2 for Wenz)
 - Contra/Retour before first card was played
-- Klopfen after first 4 cards
 
-The current focus of this project is to develop an AI that is able to play the basic game types Sauspiel, Farbsolo and Wenz (doubles like "Spritzen" and "Legen" will be added later) 
+## Current Results
+These results are just preliminary and subject to change. The shown numbers are cents/game
 
-## Documentation
+<table>
+    <tr><th></th><th>HP PIMC(10, 40)</th><th>PIMC(10, 40)</th><th>PPO (lstm)</th><th>PPO (linear)</th><th>rule-based</th><th>random-coward</th><th>random</th></tr>
+    <tr><td>HP PIMC(10, 40)</td>-<td>4.9</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>PIMC(10, 40)</td><td>- 4.9</td>-<td></td>~ 8.0<td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>PPO (lstm)</td><td></td><td>~ - 8.0</td><td> - </td><td></td><td>9.7</td><td>14.2</td><td></td></tr>
+    <tr><td>PPO (linear)</td><td></td><td></td><td></td><td></td><td>8.5</td><td>11.2</td><td></td></tr>
+</table>
+
+## PPO Agent
 ### Basic Principle
 
 1. The policy neural network (that decides what action to take at any given game state) is randomly initialized.
@@ -24,10 +46,6 @@ The current focus of this project is to develop an AI that is able to play the b
 3. A new policy is trained trying to make good decision more likely and bad decisions less likely using PPO
 4. Replace the current policy by the new one and go back to 2.
 
-<!--### Class Overview
-Find the most imporatant classes for the training process below.
-
-<img src="documentation/class_diagram.jpg">-->
 
 ### State and Action Space
 
@@ -54,34 +72,22 @@ The <b>action space</b> is a 41d vector that contains
 ### LSTM-Based Policy Network
 <img src="documentation/network.jpg">
 
-### Results
-Playing against other players with 20/50 tariffs (+10 for each "Laufenden" when more than 3):
-- Random-Coward: Selects game randomly, but no solo game. Selects cards randomly.
-- Rule-Based: Selects solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
+### Example Run
+Hyperparameters used: lr = 0.002, update every 100K games, batch_size = 600K, c1 = 0.5, c2 = 0.005, steps = 15M
 
-<table>
-    <tr>
-        <th>Policy Network</th>
-        <th>Hyperparameter</th>
-        <th>against Random-Coward(cent/game)</th>
-        <th>against Rule-Based (cent/game)</th>
-    </tr>
-    <tr>
-        <td>LSTM-based</td>
-        <td>lr = 0.0001, update every 50K games, batch_size = 50K, c1 = 0.5, c2 = 0.005, steps = 5M</td>
-        <td>14.2</td>
-        <td>9.7</td>
-    </tr>
-    <tr>
-        <td>Linear</td>
-        <td>lr = 0.002, update every 100K games, batch_size = 600K, c1 = 0.5, c2 = 0.005, steps = 15M</td>
-        <td>11.2</td>
-        <td>8.5</td>
-    </tr>
-</table>
+Hyperparameters used for LSTM: lr = 0.0001, update every 50K games, batch_size = 50K, c1 = 0.5, c2 = 0.005, steps = 5M
 
 Example training run output of tensorboard (for the linear model)
 <img src="documentation/example_run.png">
+
+## PIMC Agent (Perfect Information Monte Carlo Agent)
+The basic principle of the PIMC(n, m) Agent is to do n times:
+   1. distribute remaining cards to opponents
+   2. perform Monte-Carlo Tree Search (MCTS) m times with some agent (usually random but possibility to use other probabilistic agents)
+    
+Eventually, take action with the highest cummulative visits over the n runs
+
+Hand-Prediction PIMC Agent learns an NN to estimate the distribution of remaining cards amongst opponents to improve Step 1.
 
 ## Notes
 ### Version 28.04.2020
@@ -103,28 +109,24 @@ This was necessary in previous versions because the first thing the agent learns
 
 ### Version 02.10.2020
  - Added Contra and Retour
- - Added MCTS player (in particular Perfect Infromation Monte Carlo)
-    - at the current state do n times
-      - look for a possible card distribution of remaining cards to other players
-      - perform mcts m times with some agent (currently random but will add rlagent)
-    - take action with the highest cummulative count over the n runs
- - MCTS Player performs unfortunately much better than expected. Tournament with 4 players for 1000 games resulted in the following per game rewards
+ - Added PIMC player (in particular Perfect Infromation Monte Carlo)
+ - PIMC Player performs unfortunately much better than expected. Tournament with 4 players for 1000 games resulted in the following per game rewards
     <table>
-        <tr><td>MCTS_Player(5, 20)</td><td>-9.24</td></tr>
-        <tr><td>MCTS_Player(10, 40)</td><td>12.6</td></tr>
-        <tr><td>MCTS_Player(10, 100)</td><td>13.78</td></tr>
+        <tr><td>PIMC_Player(5, 20)</td><td>-9.24</td></tr>
+        <tr><td>PIMC_Player(10, 40)</td><td>12.6</td></tr>
+        <tr><td>PIMC_Player(10, 100)</td><td>13.78</td></tr>
         <tr><td>RLPLayer</td><td>-17.14</td></tr>
     </table>
     
- - Problems of MCTS player (good article: https://core.ac.uk/download/pdf/30267707.pdf)
+ - Problems of PIMC player (good article: https://core.ac.uk/download/pdf/30267707.pdf)
     - non-locality: "Non-locality is an issue that arises since history can matter in a hidden information game". Non-locality shows very clearly when an MCTS player is playing against another player X who chose to play a solo game. The MCTS player will then sample possible card distibutions and determine that this player X will often loose his solo game. Thus the MCTS player will usually double (contra) the game when someone plays a solo.
     - strategy-fusion: could not find a good example for this in schafkopf so far.
 
- - Ideas to improve MCTS player:
+ - Ideas to improve PIMC player:
    - icorporate the probability of a card distribution (probability of the players playing the cards they have played given the hand they have)
    
 ### Version 04.11.2020
-- Added a hand prediction network to PIMC (Smart_MCTS_Player)
+- Added a hand prediction network to PIMC (HP_MCTS_Player)
   - Input: info_vector + Sequence of played cards
   - Network: 1) Linear Layer + LSTM Layer 2) 2 x Linear Layer 3) 32x4 tensor
   - Output: probability for each card to be at each players hand

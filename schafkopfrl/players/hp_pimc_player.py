@@ -8,7 +8,7 @@ from players.player import Player
 import random
 import numpy as np
 
-class SmartMCTSPlayer(Player):
+class HPPIMCPlayer(Player):
 
   def __init__(self, samples, playouts, agent, hand_predictor):
     super().__init__()
@@ -44,9 +44,9 @@ class SmartMCTSPlayer(Player):
 
     needed_player_cards[game_state.current_player] = 0
 
-    for i in range(32):
-      if self.rules.cards[i] not in remaining_cards:
-        card_probabilities[i, 3] = 0
+    #for i in range(32):
+    #  if self.rules.cards[i] in remaining_cards:
+    #    card_probabilities[i, 3] = 0
     # --------------------------------------------------------------------
 
     for i in range (self.samples):

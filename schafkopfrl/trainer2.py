@@ -9,7 +9,7 @@ from torch.utils import data
 from dataset import HandPredictionDatasetLSTM
 from game_statistics import GameStatistics
 from models.hand_predictor import HandPredictor
-from players.smart_mcts_player import SmartMCTSPlayer
+from players.hp_pimc_player import HPPIMCPlayer
 from schafkopf_env import SchafkopfEnv
 from players.random_player import RandomPlayer
 from players.rl_player import RlPlayer
@@ -48,7 +48,7 @@ def main():
   for _ in range(0, 90000000):
     Settings.logger.info("playing " +str(Settings.update_games)+ " games")
 
-    smart_mcts_player = SmartMCTSPlayer(10, 40, RandomPlayer(), hand_predictor)
+    smart_mcts_player = HPPIMCPlayer(30, 120, RandomPlayer(), hand_predictor)
     # create four players
     players = [smart_mcts_player, smart_mcts_player, smart_mcts_player, smart_mcts_player]
     # create a game simulation
@@ -71,10 +71,12 @@ def main():
         action, prob = players[state["game_state"].current_player].act(state)
         state, reward, terminal = schafkopf_env.step(action, prob)
 
+        if state["game_state"].game_type[1] == 2:
+          schafkopf_env.print_game()
+
       print("game "+str(i_episode))
       i_episode += 1
       game_statistics.update_statistics(state["game_state"], reward)
-      #return None
     t1 = time.time()
 
     #update the policy
@@ -173,4 +175,4 @@ if __name__ == '__main__':
   main()
   pr.disable()
   # after your program ends
-  pr.print_stats(sort="cumtime")
+  pr.print_stats(sort="tottime")

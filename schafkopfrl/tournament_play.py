@@ -4,27 +4,27 @@ import torch
 
 from models.actor_critic_lstm import ActorCriticNetworkLSTM
 from models.hand_predictor import HandPredictor
-from players.mcts_player import MCTSPlayer
+from players.pimc_player import PIMCPlayer
 from players.random_coward_player import RandomCowardPlayer
 from players.random_player import RandomPlayer
 from players.rl_player import RlPlayer
 from players.rule_based_player import RuleBasedPlayer
-from players.smart_mcts_player import SmartMCTSPlayer
+from players.hp_pimc_player import HPPIMCPlayer
 from schafkopf_env import SchafkopfEnv
 from settings import Settings
 
 
 def main():
-  mcts_player_1 = MCTSPlayer(5, 20, RandomPlayer())
+  mcts_player_1 = PIMCPlayer(5, 20, RandomPlayer())
 
 
   policy = ActorCriticNetworkLSTM().to(Settings.device)
   policy.load_state_dict(torch.load("../policies/pretrained/lstm-policy.pt"))
   rl_player = RlPlayer(policy, action_shaping=False, eval=True)
 
-  mcts_player_2 = MCTSPlayer(10, 40, RandomPlayer())
+  mcts_player_2 = PIMCPlayer(10, 40, RandomPlayer())
 
-  smart_mcts_player = SmartMCTSPlayer(5, 20, RandomPlayer(), HandPredictor().to(Settings.device))
+  smart_mcts_player = HPPIMCPlayer(5, 20, RandomPlayer(), HandPredictor().to(Settings.device))
 
   #players = [mcts_player_2,mcts_player_1, mcts_player_2,mcts_player_1]
   #players = [RuleBasedPlayer(),RuleBasedPlayer(), RuleBasedPlayer(),mcts_player]

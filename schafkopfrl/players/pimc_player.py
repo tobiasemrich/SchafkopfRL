@@ -6,7 +6,7 @@ from schafkopf_env import SchafkopfEnv
 from players.player import Player
 import random
 
-class MCTSPlayer(Player):
+class PIMCPlayer(Player):
 
   def __init__(self, samples, playouts, agent):
     super().__init__()

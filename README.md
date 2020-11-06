@@ -123,6 +123,14 @@ This was necessary in previous versions because the first thing the agent learns
  - Ideas to improve MCTS player:
    - icorporate the probability of a card distribution (probability of the players playing the cards they have played given the hand they have)
    
+### Version 04.11.2020
+- Added a hand prediction network to PIMC (Smart_MCTS_Player)
+  - Input: info_vector + Sequence of played cards
+  - Network: 1) Linear Layer + LSTM Layer 2) 2 x Linear Layer 3) 32x4 tensor
+  - Output: probability for each card to be at each players hand
+- Trained by iteratively playing n = 400 games and then updating. Playing a game is really slow (10 secs / game)
+- MCTS_Player(10, 40) vs. Smart_MCTS_Player(10, 40) = -4.9 vs 4.9 over 3K games, so this really improves the PIMC player. Still not close to human level IMHO.
+
 ## Resources
 - PPO Paper: https://arxiv.org/abs/1707.06347
 - Pytorch implementation of PPO: https://github.com/nikhilbarhate99/PPO-PyTorch

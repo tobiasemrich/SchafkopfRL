@@ -32,10 +32,10 @@ These results are just preliminary and subject to change. The shown numbers are 
 
 <table>
     <tr><th></th><th>HP PIMC(10, 40)</th><th>PIMC(10, 40)</th><th>PPO (lstm)</th><th>PPO (linear)</th><th>rule-based</th><th>random-coward</th><th>random</th></tr>
-    <tr><td>HP PIMC(10, 40)</td>-<td>4.9</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>PIMC(10, 40)</td><td>- 4.9</td>-<td></td><td>~ 8.0</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>HP PIMC(10, 40)</td><td> - </td><td>4.9</td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>PIMC(10, 40)</td><td>- 4.9</td><td> - </td><td>~ 8.0</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>PPO (lstm)</td><td></td><td>~ - 8.0</td><td> - </td><td></td><td>9.7</td><td>14.2</td><td></td></tr>
-    <tr><td>PPO (linear)</td><td></td><td></td><td></td><td></td><td>8.5</td><td>11.2</td><td></td></tr>
+    <tr><td>PPO (linear)</td><td></td><td></td><td></td><td> - </td><td>8.5</td><td>11.2</td><td></td></tr>
 </table>
 
 ## PPO Agent

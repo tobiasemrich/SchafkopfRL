@@ -33,7 +33,7 @@ These results are just preliminary and subject to change. The shown numbers are 
 <table>
     <tr><th></th><th>HP PIMC(10, 40)</th><th>PIMC(10, 40)</th><th>PPO (lstm)</th><th>PPO (linear)</th><th>rule-based</th><th>random-coward</th><th>random</th></tr>
     <tr><td>HP PIMC(10, 40)</td>-<td>4.9</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>PIMC(10, 40)</td><td>- 4.9</td>-<td></td>~ 8.0<td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>PIMC(10, 40)</td><td>- 4.9</td>-<td></td><td>~ 8.0</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>PPO (lstm)</td><td></td><td>~ - 8.0</td><td> - </td><td></td><td>9.7</td><td>14.2</td><td></td></tr>
     <tr><td>PPO (linear)</td><td></td><td></td><td></td><td></td><td>8.5</td><td>11.2</td><td></td></tr>
 </table>
@@ -131,7 +131,7 @@ This was necessary in previous versions because the first thing the agent learns
   - Network: 1) Linear Layer + LSTM Layer 2) 2 x Linear Layer 3) 32x4 tensor
   - Output: probability for each card to be at each players hand
 - Trained by iteratively playing n = 400 games and then updating. Playing a game is really slow (10 secs / game)
-- MCTS_Player(10, 40) vs. Smart_MCTS_Player(10, 40) = -4.9 vs 4.9 over 3K games, so this really improves the PIMC player. Still not close to human level IMHO.
+- PIMC_Player(10, 40) vs. HP_MCTS_Player(10, 40) = -4.9 vs 4.9 over 3K games, so this really improves the PIMC player. Still not close to human level IMHO.
 
 ## Resources
 - PPO Paper: https://arxiv.org/abs/1707.06347

@@ -1,14 +1,13 @@
 # SchafkopfRL
 
 Developing an AI agent to play the bavarian four-player card game Schafkopf. The main components of this repo are:
-- <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](##schafkopf-rules) for the supported rule set.
+- <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](#schafkopf-rules) for the supported rule set.
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
-
 <table>
 <tr><th>Agent</th><th>Description</th></tr>
 <tr>
     <td>
-        [RL Agent](##rl-agent)
+        [RL Agent](#rl-agent)
     </td>
     <td>
         Agent that acts based on an policy neural network. The policy neural network can be trained through 
@@ -20,7 +19,7 @@ Developing an AI agent to play the bavarian four-player card game Schafkopf. The
 </tr>
 <tr>
     <td>
-[PIMC Agent](##pimc-agent)
+[PIMC Agent](#pimc-agent)
     </td>
     <td>
         Agent utilizing Monte-Carlo-Tree Search for imperfect information games. Samples opponent hands several times and performs MCTS on each instance.
@@ -33,12 +32,13 @@ Developing an AI agent to play the bavarian four-player card game Schafkopf. The
     <td>
         Simple Agents
     </td>
-    Agents with simple hard-coded rules
+     <td>
+Agents with simple hard-coded rules
 
 - Random: performs each action random (only valid actions)
 - Random-Coward: performs each action random, but never plays a solo and never doubles the game.
 - Rule-based: Plays solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
-    <td>
+   
     </td>
 </tr>
 </table>

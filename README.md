@@ -4,40 +4,40 @@ Developing an AI agent to play the bavarian four-player card game Schafkopf. The
 - <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](#schafkopf-rules) for the supported rule set.
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
 
-<table>
-<tr><th>Agent</th><th>Description</th></tr>
-<tr>
-<td>
-
-[RL Agent](#rl-agent)
-        
-</td>
-<td>
-    Agent that acts based on an policy neural network which is trained though proximal policy optimization. 
-    
-</td>
-</tr>
-<tr>
+    <table>
+    <tr><th>Agent</th><th>Description</th></tr>
+    <tr>
     <td>
     
-[PIMC Agent](#pimc-agent)
-
-</td>
-<td>
-    Agent utilizing Monte-Carlo-Tree Search for imperfect information games. 
-</td>
-</tr>
-<tr>
-<td>
-
-[Simple Agents](#simple-agents)
-
-</td>
-<td>
-Agents with simple hard-coded rules.
-</td>
-</tr>
-</table>
+    [RL-Agent](#rl-agent)
+            
+    </td>
+    <td>
+        Agent that acts based on an policy neural network which is trained though proximal policy optimization. 
+        
+    </td>
+    </tr>
+    <tr>
+        <td>
+        
+    [PIMC-Agent](#pimc-agent)
+    
+    </td>
+    <td>
+        Agent utilizing Monte-Carlo-Tree Search for imperfect information games. 
+    </td>
+    </tr>
+    <tr>
+    <td>
+    
+    [Simple-Agents](#simple-agents)
+    
+    </td>
+    <td>
+    Agents with simple hard-coded rules.
+    </td>
+    </tr>
+    </table>
 
 - <b>Trainer:</b>  Trainer class for training the model based-players
 

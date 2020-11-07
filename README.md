@@ -5,11 +5,10 @@ Developing an AI agent to play the bavarian four-player card game Schafkopf. The
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
 
     <table>
-    <tr><th>Agent</th><th>Description</th></tr>
     <tr>
     <td>
     
-    [RL-Agent](#rl-agent)
+    [RL Agent](#rl-agent)
             
     </td>
     <td>
@@ -20,7 +19,7 @@ Developing an AI agent to play the bavarian four-player card game Schafkopf. The
     <tr>
         <td>
         
-    [PIMC-Agent](#pimc-agent)
+    [PIMC Agent](#pimc-agent)
     
     </td>
     <td>
@@ -30,7 +29,7 @@ Developing an AI agent to play the bavarian four-player card game Schafkopf. The
     <tr>
     <td>
     
-    [Simple-Agents](#simple-agents)
+    [Simple Agents](#simple-agents)
     
     </td>
     <td>
@@ -113,15 +112,21 @@ Example training run output of tensorboard (for the linear model)
 Samples opponent hands several times and performs MCTS on each instance. 
 
 The basic principle of the PIMC(n, m) Agent is to do n times:
-   1. distribute remaining cards to opponents
+   1. distribute remaining cards (randomly) to opponents
    2. perform Monte-Carlo Tree Search (MCTS) m times with some agent (usually random but possibility to use other probabilistic agents)
     
 Eventually, take action with the highest cummulative visits over the n runs
 
-Two variants are currently implemented:
+### HP PIMC Agent
+In addition to the vanilla variant where opponent hands are sampled randomly there is a Hand-Prediction PIMC Agent. 
+The HP PIMC Agent learns an NN to estimate the distribution of remaining cards amongst opponents to improve Step 1: 
 
-- Vanilla: Random sampling of opponent hands
-- Hand-Predictor: PIMC Agent learns an NN to estimate the distribution of remaining cards amongst opponents to improve Step 1. Trained through self-play.
+  - Input: info_vector + Sequence of played cards
+  - Network: 1) Linear Layer + LSTM Layer 2) 2 x Linear Layer 3) 32x4 tensor
+  - Output: probability for each card to be at each players hand
+  
+The hand prediction NN is trained by iteratively playing n = 400 games in self-play and then updating. 
+
 
 ## Simple Agents
 - Random: performs each action random (only valid actions)
@@ -166,10 +171,7 @@ This was necessary in previous versions because the first thing the agent learns
    
 ### Version 04.11.2020
 - Added a hand prediction network to PIMC (HP_MCTS_Player)
-  - Input: info_vector + Sequence of played cards
-  - Network: 1) Linear Layer + LSTM Layer 2) 2 x Linear Layer 3) 32x4 tensor
-  - Output: probability for each card to be at each players hand
-- Trained by iteratively playing n = 400 games and then updating. Playing a game is really slow (10 secs / game)
+- Playing a game is really slow (10 secs / game)
 - PIMC_Player(10, 40) vs. HP_MCTS_Player(10, 40) = -4.9 vs 4.9 over 3K games, so this really improves the PIMC player. Still not close to human level IMHO.
 
 ## Resources

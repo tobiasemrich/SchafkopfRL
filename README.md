@@ -1,18 +1,48 @@
 # SchafkopfRL
 
-Developing an AI agent for play the bavarian four-player card game Schafkopfen. The main components of this repo are:
-- <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopfen. See Schafkopf Rules for the supported rule set.
+Developing an AI agent to play the bavarian four-player card game Schafkopf. The main components of this repo are:
+- <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](##schafkopf-rules) for the supported rule set.
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
-  - PPO Agent: RL Agent trained with proximal policy optimization.
-    - Linear: Using a 1D vector state representation of the current game state and an Actor-Critic Network that has a linear input layer.
-    - LSTM: Using a complex state representation (e.g., representing played cards as sequences) and an Actor-Critic Network that also hast LSTM input layers.
-  - PIMC Agents: Using Monte-Carlo-Tree Search for this imperfect information game. Samples opponent hands several times and performs MCTS on each instance.
-    - Vanilla: Random sampling of opponent hands
-    - Hand-Predictor: utilizes a neural network for predicting card distribution amongst opponents. Trained by self-play.
-  - Simple Agents: Agents with simple hard-coded rules
-    - Random: performs each action random (only valid actions)
-    - Random-Coward: performs each action random, but never plays a solo and never doubles the game.
-    - Rule-based: Plays solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
+
+<table>
+<tr><th>Agent</th><th>Description</th></tr>
+<tr>
+    <td>
+        [RL Agent](##rl-agent)
+    </td>
+    <td>
+        Agent that acts based on an policy neural network. The policy neural network can be trained through 
+        reinforcement learning (specifically proximal policy optimization). Currently, there are two policy networks available:
+        
+   - Linear: Using a 1D vector state representation of the current game state and an Actor-Critic Network that has a linear input layer.
+   - LSTM: Using a complex state representation (e.g., representing played cards as sequences) and an Actor-Critic Network that also hast LSTM input layers.
+    </td>
+</tr>
+<tr>
+    <td>
+[PIMC Agent](##pimc-agent)
+    </td>
+    <td>
+        Agent utilizing Monte-Carlo-Tree Search for imperfect information games. Samples opponent hands several times and performs MCTS on each instance.
+ 
+ - Vanilla: Random sampling of opponent hands
+ - Hand-Predictor: utilizes a neural network for predicting card distribution amongst opponents. Trained by self-play.
+    </td>
+</tr>
+<tr>
+    <td>
+        Simple Agents
+    </td>
+    Agents with simple hard-coded rules
+
+- Random: performs each action random (only valid actions)
+- Random-Coward: performs each action random, but never plays a solo and never doubles the game.
+- Rule-based: Plays solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
+    <td>
+    </td>
+</tr>
+</table>
+
 - <b>Trainer:</b>  Trainer class for training the model based-players
 
 
@@ -38,7 +68,7 @@ These results are just preliminary and subject to change. The shown numbers are 
     <tr><td>PPO (linear)</td><td></td><td></td><td></td><td> - </td><td>8.5</td><td>11.2</td><td></td></tr>
 </table>
 
-## PPO Agent
+## RL Agent
 ### Basic Principle
 
 1. The policy neural network (that decides what action to take at any given game state) is randomly initialized.
@@ -47,7 +77,7 @@ These results are just preliminary and subject to change. The shown numbers are 
 4. Replace the current policy by the new one and go back to 2.
 
 
-### State and Action Space
+### State and Action Space (LSTM variant)
 
 The <b>state space </b> consists of three parts (necessary bits in brackets):
 
@@ -73,7 +103,7 @@ The <b>action space</b> is a 41d vector that contains
 <img src="documentation/network.jpg">
 
 ### Example Run
-Hyperparameters used: lr = 0.002, update every 100K games, batch_size = 600K, c1 = 0.5, c2 = 0.005, steps = 15M
+Hyperparameters used for Linear: lr = 0.002, update every 100K games, batch_size = 600K, c1 = 0.5, c2 = 0.005, steps = 15M
 
 Hyperparameters used for LSTM: lr = 0.0001, update every 50K games, batch_size = 50K, c1 = 0.5, c2 = 0.005, steps = 5M
 

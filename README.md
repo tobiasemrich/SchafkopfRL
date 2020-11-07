@@ -3,30 +3,29 @@
 Developing an AI agent to play the bavarian four-player card game Schafkopf. The main components of this repo are:
 - <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](#schafkopf-rules) for the supported rule set.
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
+
 <table>
 <tr><th>Agent</th><th>Description</th></tr>
 <tr>
-    <td>
-        [RL Agent](#rl-agent)
-    </td>
-    <td>
-        Agent that acts based on an policy neural network. The policy neural network can be trained through 
-        reinforcement learning (specifically proximal policy optimization). Currently, there are two policy networks available:
+<td>
+
+[RL Agent](#rl-agent)
         
-   - Linear: Using a 1D vector state representation of the current game state and an Actor-Critic Network that has a linear input layer.
-   - LSTM: Using a complex state representation (e.g., representing played cards as sequences) and an Actor-Critic Network that also hast LSTM input layers.
-    </td>
+</td>
+<td>
+    Agent that acts based on an policy neural network which is trained though proximal policy optimization. 
+    
+</td>
 </tr>
 <tr>
     <td>
+    
 [PIMC Agent](#pimc-agent)
-    </td>
-    <td>
-        Agent utilizing Monte-Carlo-Tree Search for imperfect information games. Samples opponent hands several times and performs MCTS on each instance.
- 
- - Vanilla: Random sampling of opponent hands
- - Hand-Predictor: utilizes a neural network for predicting card distribution amongst opponents. Trained by self-play.
-    </td>
+
+</td>
+<td>
+    Agent utilizing Monte-Carlo-Tree Search for imperfect information games. 
+</td>
 </tr>
 <tr>
     <td>
@@ -76,7 +75,10 @@ These results are just preliminary and subject to change. The shown numbers are 
 3. A new policy is trained trying to make good decision more likely and bad decisions less likely using PPO
 4. Replace the current policy by the new one and go back to 2.
 
-
+Currently, there are two policy networks available:
+    
+- Linear: Using a 1D vector state representation of the current game state and an Actor-Critic Network that has a linear input layer.
+- LSTM: Using a complex state representation (e.g., representing played cards as sequences) and an Actor-Critic Network that also hast LSTM input layers.
 ### State and Action Space (LSTM variant)
 
 The <b>state space </b> consists of three parts (necessary bits in brackets):
@@ -111,13 +113,18 @@ Example training run output of tensorboard (for the linear model)
 <img src="documentation/example_run.png">
 
 ## PIMC Agent (Perfect Information Monte Carlo Agent)
+Samples opponent hands several times and performs MCTS on each instance. 
+
 The basic principle of the PIMC(n, m) Agent is to do n times:
    1. distribute remaining cards to opponents
    2. perform Monte-Carlo Tree Search (MCTS) m times with some agent (usually random but possibility to use other probabilistic agents)
     
 Eventually, take action with the highest cummulative visits over the n runs
 
-Hand-Prediction PIMC Agent learns an NN to estimate the distribution of remaining cards amongst opponents to improve Step 1.
+Two variants are currently implemented:
+
+- Vanilla: Random sampling of opponent hands
+- Hand-Predictor: PIMC Agent learns an NN to estimate the distribution of remaining cards amongst opponents to improve Step 1. Trained through self-play.
 
 ## Notes
 ### Version 28.04.2020

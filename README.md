@@ -28,17 +28,14 @@ Developing an AI agent to play the bavarian four-player card game Schafkopf. The
 </td>
 </tr>
 <tr>
-    <td>
-        Simple Agents
-    </td>
-     <td>
-Agents with simple hard-coded rules
+<td>
 
-- Random: performs each action random (only valid actions)
-- Random-Coward: performs each action random, but never plays a solo and never doubles the game.
-- Rule-based: Plays solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
-   
-    </td>
+[Simple Agents](#simple-agents)
+
+</td>
+<td>
+Agents with simple hard-coded rules.
+</td>
 </tr>
 </table>
 
@@ -126,6 +123,11 @@ Two variants are currently implemented:
 - Vanilla: Random sampling of opponent hands
 - Hand-Predictor: PIMC Agent learns an NN to estimate the distribution of remaining cards amongst opponents to improve Step 1. Trained through self-play.
 
+## Simple Agents
+- Random: performs each action random (only valid actions)
+- Random-Coward: performs each action random, but never plays a solo and never doubles the game.
+- Rule-based: Plays solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
+   
 ## Notes
 ### Version 28.04.2020
 - Training takes a lot of time. After 15 days of continuous training the agent is still (slowly) improving.

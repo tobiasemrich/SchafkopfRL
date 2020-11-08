@@ -3,41 +3,9 @@
 Developing an AI agent to play the bavarian four-player card game Schafkopf. The main components of this repo are:
 - <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](#schafkopf-rules) for the supported rule set.
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
-
-    <table>
-    <tr>
-    <td>
-    
-    [RL Agent](#rl-agent)
-            
-    </td>
-    <td>
-        Agent that acts based on an policy neural network which is trained though proximal policy optimization. 
-        
-    </td>
-    </tr>
-    <tr>
-        <td>
-        
-    [PIMC Agent](#pimc-agent)
-    
-    </td>
-    <td>
-        Agent utilizing Monte-Carlo-Tree Search for imperfect information games. 
-    </td>
-    </tr>
-    <tr>
-    <td>
-    
-    [Simple Agents](#simple-agents)
-    
-    </td>
-    <td>
-    Agents with simple hard-coded rules.
-    </td>
-    </tr>
-    </table>
-
+  - [RL Agent](#rl-agent): Agent that acts based on an policy neural network which is trained though proximal policy optimization. 
+  - [PIMC Agent](#pimc-agent): Agent utilizing Monte-Carlo-Tree Search for imperfect information games. 
+  - [Baseline Agents](#baseline-agents): Agents with simple hard-coded rules.
 - <b>Trainer:</b>  Trainer class for training the model based-players
 
 
@@ -51,17 +19,6 @@ In this project I will focus on the following rules:
 - Allowed Games: Sauspiel, Farbsolo, Wenz
 - Tariffs: 20 for Sauspiel, 50 for Solo, 10 for Schneider/Schwarz or Laufende starting from 3 (from 2 for Wenz)
 - Contra/Retour before first card was played
-
-## Current Results
-These results are just preliminary and subject to change. The shown numbers are cents/game
-
-<table>
-    <tr><th></th><th>HP PIMC(10, 40)</th><th>PIMC(10, 40)</th><th>PPO (lstm)</th><th>PPO (linear)</th><th>rule-based</th><th>random-coward</th><th>random</th></tr>
-    <tr><td>HP PIMC(10, 40)</td><td> - </td><td>4.9</td><td></td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>PIMC(10, 40)</td><td>- 4.9</td><td> - </td><td>~ 8.0</td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>PPO (lstm)</td><td></td><td>~ - 8.0</td><td> - </td><td></td><td>9.7</td><td>14.2</td><td></td></tr>
-    <tr><td>PPO (linear)</td><td></td><td></td><td></td><td> - </td><td>8.5</td><td>11.2</td><td></td></tr>
-</table>
 
 ## RL Agent
 ### Basic Principle
@@ -92,9 +49,10 @@ The <b>state space </b> consists of three parts (necessary bits in brackets):
     - current_trick: y * (12 + 4) each played card in order plus the player that played it
 
 other players are encoded by position with respect to ego_player
-The <b>action space</b> is a 41d vector that contains
+The <b>action space</b> is a 43d vector that contains
 
 - game type selection (9)
+- double game (2)
 - card selection (32)
 
 ### LSTM-Based Policy Network
@@ -108,8 +66,8 @@ Hyperparameters used for LSTM: lr = 0.0001, update every 50K games, batch_size =
 Example training run output of tensorboard (for the linear model)
 <img src="documentation/example_run.png">
 
-## PIMC Agent (Perfect Information Monte Carlo Agent)
-Samples opponent hands several times and performs MCTS on each instance. 
+## PIMC Agent
+Samples opponent hands several times and performs MCTS on each instance (Perfect Information Monte Carlo)
 
 The basic principle of the PIMC(n, m) Agent is to do n times:
    1. distribute remaining cards (randomly) to opponents
@@ -128,11 +86,23 @@ The HP PIMC Agent learns an NN to estimate the distribution of remaining cards a
 The hand prediction NN is trained by iteratively playing n = 400 games in self-play and then updating. 
 
 
-## Simple Agents
+## Baseline Agents
 - Random: performs each action random (only valid actions)
 - Random-Coward: performs each action random, but never plays a solo and never doubles the game.
 - Rule-based: Plays solo if enough trumps, otherwise non-solo game at random. Selects cards according to some simple human-imitating heuristics (play trump if player, don't play trump if non-player, play ace of color if possible, ...)
    
+   
+## Current Results
+These results are just preliminary and subject to change. The shown numbers are cents/game
+
+<table>
+    <tr><th></th><th>HP PIMC(10, 40)</th><th>PIMC(10, 40)</th><th>PPO (lstm)</th><th>PPO (linear)</th><th>rule-based</th><th>random-coward</th><th>random</th></tr>
+    <tr><td>HP PIMC(10, 40)</td><td> - </td><td>4.9</td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>PIMC(10, 40)</td><td>- 4.9</td><td> - </td><td>~ 8.0</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>PPO (lstm)</td><td></td><td>~ - 8.0</td><td> - </td><td></td><td>9.7</td><td>14.2</td><td></td></tr>
+    <tr><td>PPO (linear)</td><td></td><td></td><td></td><td> - </td><td>8.5</td><td>11.2</td><td></td></tr>
+</table>
+
 ## Notes
 ### Version 28.04.2020
 - Training takes a lot of time. After 15 days of continuous training the agent is still (slowly) improving.

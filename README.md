@@ -1,15 +1,33 @@
 # SchafkopfRL
 
-Developing an AI agent to play the bavarian four-player card game Schafkopf. The main components of this repo are:
-- <b>Schafkopf Environment</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](#schafkopf-rules) for the supported rule set.
+Framework for developing an AI agent to play the bavarian four-player card game Schafkopf. The main components of this repo are:
+- <b>[Schafkopf Environment](#schafkopf-environment)</b>: A multi-agent environment that allows agents to play Schafkopf. See [Schafkopf Rules](#schafkopf-rules) for the supported rule set.
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
   - [RL Agent](#rl-agent): Agent that acts based on an policy neural network which is trained though proximal policy optimization. 
   - [PIMC Agent](#pimc-agent): Agent utilizing Monte-Carlo-Tree Search for imperfect information games. 
   - [Baseline Agents](#baseline-agents): Agents with simple hard-coded rules.
 - <b>Trainer:</b>  Trainer class for training the model based-players
 
+##Schafkopf Environment
+The schafkopf environment offers the following two main functions:
+- reset(): creates a new game round. Decides on the player to play first
+- step(action): performs an action in the environment. Actions can be calling a game, giving contra/retour or playing a card.
 
-## Schafkopf Rules
+both of these function return 
+- the current state of the game as perceived by the current player (the player that needs to perform the next action) consisting of
+  - public_gamestate: Includes all information seen by all player. E.g., dealer, called_games, played_game, played_cards so far,...
+  - player_hand: A list of cards held by the current player
+  - allowed_actions: A list of allowed actions to be performed by the current player
+- the reward: a list containing the reward for each player. This is usually [0,0,0,0] but contains the payments of the game after the last player played his last card (e.g., [20, -20, -20, 20]).
+- terminal: boolean indicator that returns true, when the last player played his last card.
+
+A Schafkopf game has the following sequence of events:
+1) bidding stage: each player starting with the player after the dealer declares a game he wants to play
+2) contra stage: each player starting with the player after the dealer can double the game (if allowed according to the rules)
+3) retour stage (optional): if a player gave contra in phase 2, each player (again starting with the one after the dealer) is asked if he wants to double the game
+4) trick stage: each player sequentially is asked to play a card, starting with the player after the dealer (first trick) or the player who took the last trick (all other tricks)
+
+### Schafkopf Rules
 Schafkopf is a traditional bavarian 4 player trick based card game with imperfect information. It has both competetive and cooperative game elements.
 
 There are a lot of different variations (allowed game types, allowed doubling mechanisms, ...) and reward schemes. A good overview can be found at https://en.wikipedia.org/wiki/Schafkopf
@@ -93,6 +111,9 @@ The hand prediction NN is trained by iteratively playing n = 400 games in self-p
    
    
 ## Current Results
+
+In general HP-PIMC > PIMC > PPO (lstm) > PPO (linear) > rule-based > random-coward > random  
+
 These results are just preliminary and subject to change. The shown numbers are cents/game
 
 <table>
@@ -102,6 +123,14 @@ These results are just preliminary and subject to change. The shown numbers are 
     <tr><td>PPO (lstm)</td><td></td><td>~ - 8.0</td><td> - </td><td></td><td>9.7</td><td>14.2</td><td></td></tr>
     <tr><td>PPO (linear)</td><td></td><td></td><td></td><td> - </td><td>8.5</td><td>11.2</td><td></td></tr>
 </table>
+
+## Next Steps
+- [ ] Rework Schafkopf_env to be compatible with RLLib
+- [ ] Train policy network on real data
+- [ ] Implement MCTS with policy heuristic (e.g., Alpha Zero)
+  - [ ] Change value output of actor critic (to value of each actor)
+- [ ] add an additional prediction head to actor critic for prediction of teams
+- [ ] complete the tournament (current results)
 
 ## Notes
 ### Version 28.04.2020
@@ -152,3 +181,5 @@ This was necessary in previous versions because the first thing the agent learns
 - Nice overview paper AI for card games: https://arxiv.org/pdf/1906.04439.pdf
 - MCTS for imperfect information games https://core.ac.uk/download/pdf/30267707.pdf
 - DL model for predicting opponent hands for PIMC https://www.aaai.org/ojs/index.php/AAAI/article/view/3909/3787
+- Still to be read:
+  - https://arxiv.org/pdf/1709.09451v1.pdf

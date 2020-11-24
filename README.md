@@ -8,7 +8,7 @@ Framework for developing an AI agent to play the bavarian four-player card game 
   - [Baseline Agents](#baseline-agents): Agents with simple hard-coded rules.
 - <b>Trainer:</b>  Trainer class for training the model based-players
 
-##Schafkopf Environment
+## Schafkopf Environment
 The schafkopf environment offers the following two main functions:
 - reset(): creates a new game round. Decides on the player to play first
 - step(action): performs an action in the environment. Actions can be calling a game, giving contra/retour or playing a card.

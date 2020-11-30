@@ -12,6 +12,7 @@ class SchafkopfEnv:
     self.gamestate = None
     self.player_cards = [None, None, None, None]
     self.setSeed(seed)
+    self.last_allowed_actions = []
 
 
   def reset(self):
@@ -31,11 +32,14 @@ class SchafkopfEnv:
     state["game_state"] = self.gamestate
     state["current_player_cards"] = self.player_cards[self.gamestate.current_player]
     state["allowed_actions"] = self.rules.allowed_games(self.player_cards[self.gamestate.current_player])
-
+    self.last_allowed_actions = state["allowed_actions"]
 
     return state, [0, 0, 0, 0], False
 
   def step(self, action, action_prob=1):
+
+    if action not in self.last_allowed_actions:
+      raise Exception("Action not allowed!")
 
     state = {}
 
@@ -87,7 +91,7 @@ class SchafkopfEnv:
           first_player_of_trick = self.gamestate.first_player if self.gamestate.trick_number == 0 else self.gamestate.trick_owner[self.gamestate.trick_number - 1]
           card_played = trick_cards[first_player_of_trick]
           rufsau = [self.gamestate.game_type[0], 7]
-          if self.gamestate.game_type[0] == card_played[0] and card_played != rufsau and card_played not in self.rules.get_sorted_trumps(self.gamestate.game_type) and rufsau in self.player_cards[self.gamestate.current_player]:
+          if self.gamestate.game_type[0] == card_played[0] and card_played != rufsau and card_played not in self.rules.get_sorted_trumps(self.gamestate.game_type) and rufsau in self.player_cards[first_player_of_trick]:
             self.gamestate.davongelaufen = first_player_of_trick
 
         self.gamestate.trick_number += 1
@@ -96,6 +100,7 @@ class SchafkopfEnv:
     state["game_state"] = self.gamestate
     state["allowed_actions"] = self.rules.allowed_actions(self.gamestate, self.player_cards[self.gamestate.current_player])
     state["current_player_cards"] = self.player_cards[self.gamestate.current_player]
+    self.last_allowed_actions = state["allowed_actions"]
 
     terminal = False
     rewards = [0, 0, 0, 0]
@@ -281,6 +286,7 @@ class SchafkopfEnv:
     state["game_state"] = self.gamestate
     state["current_player_cards"] = self.player_cards[self.gamestate.current_player]
     state["allowed_actions"] = self.rules.allowed_actions(self.gamestate, self.player_cards[self.gamestate.current_player])
+    self.last_allowed_actions = state["allowed_actions"]
     if self.gamestate.played_cards == 32:
       return state, self.get_rewards(), True
     else:

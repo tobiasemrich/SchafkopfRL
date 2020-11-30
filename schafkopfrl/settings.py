@@ -25,13 +25,13 @@ class Settings:
 
   #device used for pytorch
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+  #device = torch.device("cpu")
   # what model to use
   #model, dataset = ActorCriticNetworkLinear,ExperienceDatasetLinear
   model, dataset = ActorCriticNetworkLSTM, ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
-  update_games = 2  # update policy every n games
+  update_games = 100  # update policy every n games
   batch_size = update_games * 22
   mini_batch_size =  batch_size # make this as large as possible to fit in gpu
 
@@ -39,7 +39,7 @@ class Settings:
   checkpoint_folder = "../policies"
 
   # lr = 0.0002
-  lr = 0.02
+  lr = 0.0002
   lr_stepsize = 30000000  # 300000
   lr_gamma = 0.3
 

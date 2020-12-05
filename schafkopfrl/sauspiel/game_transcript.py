@@ -1,5 +1,10 @@
 import json
 
+from lxml import etree
+from io import StringIO, BytesIO
+
+from public_gamestate import PublicGameState
+
 
 class GameTranscript:
 
@@ -42,9 +47,11 @@ class GameTranscript:
   def __init__(self):
     self.id = None
 
-    self.sonderregeln = None
-    self.klopfer = None
-    self.kontra = None
+    self.tarif = None
+
+    self.sonderregeln = []
+    self.klopfer = []
+    self.kontra = []
 
     self.player_dict = {}
     self.player_hands = {i:[] for i in range(4)}
@@ -55,7 +62,74 @@ class GameTranscript:
 
     self.trick_owner = [None for x in range(8)]
 
-    self.game_player = None
+
+
+
+  def fast_parse(self, driver):
+
+    parser = etree.HTMLParser(remove_blank_text=True)
+    tree = etree.parse(StringIO(driver.page_source), parser)
+
+    # get id
+    self.id = tree.xpath("/html/body/div[1]/div/div[1]/div/h2")[0].text.split(",")[0].split("#")[1]
+
+    # get participant names
+    self.player_dict[tree.xpath(
+      "/html/body/div[1]/div/div[5]/div[1]/div/div[1]/div[1]/a/div[2]")[0].text.strip()] = 0
+    self.player_dict[tree.xpath(
+      "/html/body/div[1]/div/div[5]/div[1]/div/div[2]/div[1]/a/div[2]")[0].text.strip()] = 1
+    self.player_dict[tree.xpath(
+      "/html/body/div[1]/div/div[5]/div[1]/div/div[3]/div[1]/a/div[2]")[0].text.strip()] = 2
+    self.player_dict[tree.xpath(
+      "/html/body/div[1]/div/div[5]/div[1]/div/div[4]/div[1]/a/div[2]")[0].text.strip()] = 3
+
+    # get game information
+    self.tarif = tree.xpath("/html/body/div[1]/div/div[5]/div[2]/table/tbody/tr[1]/td")[0].text.strip()
+    #game_table_elem = tree.xpath("//table[@class='game-result-table']")
+    sr = tree.xpath("/html/body/div[1]/div/div[5]/div[2]/table/tbody/tr[2]/td")[0]
+    if sr.text.strip() != "-":
+      for im in sr:
+        self.sonderregeln.append(im.get("title"))
+    kl = tree.xpath("/html/body/div[1]/div/div[5]/div[2]/table/tbody/tr[6]/td")[0]
+    if kl.text.strip() != "-":
+       self.klopfer = [a.text for a in kl]
+
+    con = tree.xpath("/html/body/div[1]/div/div[5]/div[2]/table/tbody/tr[7]/td")[0]
+    if con.text.strip() != "-":
+      self.kontra = [a.text for a in con]
+
+
+    # get starting hands
+    for p in range(4):
+      row = tree.xpath("/html/body/div[1]/div/section/div[2]/div[2]/div["+str(p+1)+"]")[0]
+      for card in row[1]:
+        if "highlight" in card.get('class').split(" "):
+          self.player_hands[p].insert(0, self.card_dict[card.text])
+        else:
+          self.player_hands[p].append(self.card_dict[card.text])
+
+    # get bidding round
+    messages_elements = tree.xpath("/html/body/div[1]/div/section/div[3]/div[2]")[0]
+    for message_elem in messages_elements:
+      self.bidding_round.append(' '.join(message_elem.text.split()))
+
+
+    # get tricks
+    tricks = 8
+    if "Kurze Karte" in self.sonderregeln:
+      tricks = 6
+    if len(self.bidding_round) == 4:  # all said weiter
+      tricks = 0
+    for trick in range(tricks):
+      self.trick_owner[trick] = self.player_dict[tree.xpath(
+        "/html/body/div[1]/div/section/div[" + str(4 + trick) + "]/div[2]/div[1]/div[1]/a/div[2]")[0].text.strip()]
+
+      for card in range(4):
+        card_name = tree.xpath(
+          "/html/body/div[1]/div/section/div[" + str(4 + trick) + "]/div[2]/div[2]/div[" + str(
+            1 + card) + "]/span")[0].text.strip()
+        self.course_of_game[trick][card] = GameTranscript.card_dict[card_name]
+
 
 
   def parse(self, driver):
@@ -76,7 +150,11 @@ class GameTranscript:
 
     # get game information
     game_table_elem = driver.find_element_by_class_name("game-result-table")
-    self.sonderregeln = game_table_elem.find_element_by_xpath(".//tbody/tr[2]/td").text
+    sr = game_table_elem.find_element_by_xpath(".//tbody/tr[2]/td")
+    self.sonderregeln = []
+    if sr.text != "-":
+      for im in sr.find_elements_by_css_selector("*"):
+        self.sonderregeln.append(im.get_attribute("title"))
     self.klopfer = game_table_elem.find_element_by_xpath(".//tbody/tr[6]/td").text
     self.kontra = game_table_elem.find_element_by_xpath(".//tbody/tr[7]/td").text
 
@@ -97,10 +175,19 @@ class GameTranscript:
     for message_elem in messages_elements:
       self.bidding_round.append(message_elem.text)
 
-    self.game_player = self.player_dict[self.bidding_round[-1].split(" ")[0]]
+    last_message = self.bidding_round[-1]
+    if last_message.startswith("Ex-Sauspieler"):
+      self.game_player = self.player_dict[last_message.split(" ")[0] + " " +last_message.split(" ")[1]]
+    else:
+      self.game_player = self.player_dict[last_message.split(" ")[0]]
 
     # get tricks
-    for trick in range(8):
+    tricks = 8
+    if "Kurze Karte" in self.sonderregeln:
+      tricks = 6
+    if len(self.bidding_round) == 4: #all said weiter
+      tricks = 0
+    for trick in range(tricks):
       self.trick_owner[trick] = self.player_dict[driver.find_element_by_xpath(
         "/html/body/div[1]/div/section/div[" + str(4 + trick) + "]/div[2]/div[1]/div[1]/a/div[2]").text]
 

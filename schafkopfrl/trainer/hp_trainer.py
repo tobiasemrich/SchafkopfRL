@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch.utils import data
 
-from dataset import HandPredictionDatasetLSTM
+from dataset import PredictionDatasetLSTM
 from game_statistics import GameStatistics
 from models.hand_predictor import HandPredictor
 from players.hp_pimc_player import HPPIMCPlayer
@@ -82,7 +82,7 @@ def main():
     #update the policy
     Settings.logger.info("updating policy")
     # Create dataset from collected experiences
-    dataset = HandPredictionDatasetLSTM(memory_states, memory_player_hands)
+    dataset = PredictionDatasetLSTM(memory_states, memory_player_hands)
     training_generator = data.DataLoader(dataset, collate_fn=dataset.custom_collate,batch_size=Settings.mini_batch_size, shuffle=True)
 
     #logging

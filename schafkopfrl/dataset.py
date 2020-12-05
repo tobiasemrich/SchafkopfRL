@@ -89,13 +89,13 @@ class ExperienceDatasetLSTM(data.Dataset):
 
       return [states, actions, logprobs, rewards]
 
-class HandPredictionDatasetLSTM(data.Dataset):
+class PredictionDatasetLSTM(data.Dataset):
 
   'Characterizes a dataset for PyTorch'
-  def __init__(self, states, hands, num_sequences=1):
+  def __init__(self, states, predictions, num_sequences=1):
         'Initialization'
         self.states = states
-        self.hands = hands
+        self.predictions = predictions
         self.num_sequences = num_sequences
 
   def __len__(self):
@@ -104,11 +104,11 @@ class HandPredictionDatasetLSTM(data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        return [self.states[index], self.hands[index]]
+        return [self.states[index], self.predictions[index]]
 
   def custom_collate(self, batch):
 
-      states_batch, hands_batch = zip(*batch)
+      states_batch, predictions_batch = zip(*batch)
 
       # convert list to tensor
       # torch.stack(memory.states).to(device).detach()
@@ -126,8 +126,11 @@ class HandPredictionDatasetLSTM(data.Dataset):
                                                                      enforce_sorted=False)
 
           states.append(packed_seq_batch)
+      if len(transposed_states) == 4:
+        states.append(torch.stack(transposed_states[3]).detach())
 
-      hands = torch.stack(hands_batch).detach()
+      predictions = torch.stack(predictions_batch).detach()
 
 
-      return [states, hands]
+      return [states, predictions]
+

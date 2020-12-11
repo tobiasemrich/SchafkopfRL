@@ -95,8 +95,8 @@ def main():
 
       pred, val = immitation_policy(states)
       #loss = nn.MSELoss()(pred, actions) #TODO: replace by cross entropy
-      #loss = nn.CrossEntropyLoss()(pred, actions)
-      loss = nn.NLLLoss()(pred, actions)
+      loss = nn.CrossEntropyLoss()(pred, actions)
+      #loss = nn.NLLLoss()(pred, actions)
 
       l = loss.mean().item()
 

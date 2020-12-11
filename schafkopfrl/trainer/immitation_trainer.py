@@ -21,29 +21,42 @@ rules = Rules()
 
 def main():
 
-  '''
+
   states = []
   actions = []
   #load and preprocess database
   games = SqliteDict('../sauspiel/games.sqlite')
+  count = 0
   for g in games:
     game = games[g]
     if len(game.sonderregeln) == 0:
       print(g)
+      count += 1
       game_states, game_actions = get_states_actions(game)
       states += game_states
       actions += game_actions
+      if count == 10:
+        break
 
+  '''
   with open('dataset.pkl', 'wb') as output:
     pickle.dump(states, output, pickle.HIGHEST_PROTOCOL)
     pickle.dump(actions, output, pickle.HIGHEST_PROTOCOL)
-  '''
+  
   with open('dataset.pkl', 'rb') as input:
     states = pickle.load(input)
     actions = pickle.load(input)
-
+  '''
   dataset = PredictionDatasetLSTM(states, actions, 2)
-  training_generator = data.DataLoader(dataset, collate_fn=dataset.custom_collate,batch_size=100, shuffle=True)
+
+  #split into train/test
+  train_size = int(0.9 * len(dataset))
+  test_size = len(dataset) - train_size
+  train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+
+
+  training_generator = data.DataLoader(train_dataset, collate_fn=train_dataset.custom_collate,batch_size=10000, shuffle=True)
+  testing_generator = data.DataLoader(test_dataset, collate_fn=test_dataset.custom_collate, batch_size=10000)
 
   # start tensorboard
   tb = program.TensorBoard()
@@ -70,8 +83,6 @@ def main():
 
   for epoch in range(100000):  # epoch
 
-    optimizer.zero_grad()
-
     for i, (states, actions) in enumerate(training_generator):  #batch
 
       count += 1
@@ -79,22 +90,41 @@ def main():
       # Transfer to GPU
       states = [state.to(Settings.device) for state in states]
       actions = actions.to(Settings.device)
+
+      optimizer.zero_grad()
+
       pred, val = immitation_policy(states)
       #loss = nn.MSELoss()(pred, actions) #TODO: replace by cross entropy
-      loss = nn.CrossEntropyLoss()(pred, actions)
+      #loss = nn.CrossEntropyLoss()(pred, actions)
+      loss = nn.NLLLoss()(pred, actions)
 
       l = loss.mean().item()
 
       loss.mean().backward()
       optimizer.step()
-      optimizer.zero_grad()
 
       # writing game statistics for tensorboard
-      Settings.logger.info("Epoch: " + str(count))
-      Settings.summary_writer.add_scalar('Loss/MSE_Loss', l, count)
+      Settings.logger.info("Iteration: " + str(count))
+      Settings.summary_writer.add_scalar('Training/CrossEntropy_Loss', l, count)
     # save the policy
     Settings.logger.info("Saving Checkpoint")
     torch.save(immitation_policy.state_dict(), Settings.checkpoint_folder + "/" + str(count).zfill(8) + ".pt")
+
+    #testing
+    if epoch % 10 == 0:
+      correct = 0
+      total = 0
+      with torch.no_grad():
+        for i, (states, actions) in enumerate(testing_generator):
+          pred, val = immitation_policy(states)
+          _, predicted = torch.max(pred.data, 1)
+          total += actions.size(0)
+          correct += (predicted == actions).sum().item()
+      Settings.summary_writer.add_scalar('Testing/Accuracy', correct/total, count)
+
+
+
+
 
 def get_states_actions(game_transcript):
 

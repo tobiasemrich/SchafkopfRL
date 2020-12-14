@@ -15,51 +15,56 @@ from settings import Settings
 
 
 def main():
-  mcts_player_1 = PIMCPlayer(5, 20, RandomPlayer())
 
+  pimc_player = PIMCPlayer(10, 40, RandomPlayer())
 
   policy = ActorCriticNetworkLSTM().to(Settings.device)
   policy.load_state_dict(torch.load("../policies/pretrained/lstm-policy.pt"))
   rl_player = RlPlayer(policy, action_shaping=False, eval=True)
 
-  mcts_player_2 = PIMCPlayer(10, 40, RandomPlayer())
+  hp = HandPredictor().to(Settings.device)
+  hp.load_state_dict(torch.load("../policies/pretrained/hand-predictor.pt"))
+  smart_pimc_player = HPPIMCPlayer(30, 100, RandomPlayer(), HandPredictor().to(Settings.device))
 
-  smart_mcts_player = HPPIMCPlayer(5, 20, RandomPlayer(), HandPredictor().to(Settings.device))
+  ip = ActorCriticNetworkLSTM().to(Settings.device)
+  ip.load_state_dict(torch.load("../policies/pretrained/immitation-policy.pt"))
+  immitation_player = RlPlayer(ip, action_shaping=False, eval=True)
 
-  #players = [mcts_player_2,mcts_player_1, mcts_player_2,mcts_player_1]
-  #players = [RuleBasedPlayer(),RuleBasedPlayer(), RuleBasedPlayer(),mcts_player]
-  #players = [MCTSPlayer(10, 40, RandomPlayer()), MCTSPlayer(10, 40, RandomPlayer()), RuleBasedPlayer(), RuleBasedPlayer()]
-  players = [mcts_player_1, mcts_player_2, smart_mcts_player,  rl_player]
+  participants = [rl_player, immitation_player, smart_pimc_player, pimc_player, RuleBasedPlayer()]
 
-  # create a game simulation
-  schafkopf_env = SchafkopfEnv(None)
+  number_of_games = 1000
 
-  i_episode = 0
-  cummulative_reward = [0, 0, 0, 0]
-  # tournament loop
-  for _ in range(0, 1000):
+  for i in range(len(participants)):
+    for j in range(i+1, len(participants)):
 
-    # play a bunch of games
-    t0 = time.time()
-    state, reward, terminal = schafkopf_env.reset()
-    while not terminal:
-      action, prob = players[state["game_state"].current_player].act(state)
-      state, reward, terminal = schafkopf_env.step(action, prob)
+      p1 = participants[i]
+      p2 = participants[j]
 
-    i_episode += 1
-    cummulative_reward = [cummulative_reward[i] + reward[i] for i in range(4)]
+      cummulative_reward = [0, 0, 0, 0]
+      for k in range(2): #run the same tournament twice with differen positions of players
+        schafkopf_env = SchafkopfEnv(seed=1)
+        if k == 0:
+          players = [p1, p1, p2, p2]
+        else:
+          players = [p2, p2, p1, p1]
+          cummulative_reward.reverse()
 
-    t1 = time.time()
+        # tournament loop
+        for game_nr in range(1, number_of_games+1):
+          state, reward, terminal = schafkopf_env.reset()
+          while not terminal:
+            action, prob = players[state["game_state"].current_player].act(state)
+            state, reward, terminal = schafkopf_env.step(action, prob)
 
+          cummulative_reward = [cummulative_reward[m] + reward[m] for m in range(4)]
+          #schafkopf_env.print_game()
 
-
-    schafkopf_env.print_game()
-
-    print("--------Episode: " + str(i_episode) + " game simulation (s) = " + str(t1 - t0))
-    print("--------Cummulative reward: " + str(cummulative_reward))
-    print("--------per game reward: " + str([i /i_episode for i in cummulative_reward] ))
-    #print("--------MCTS rewards: " + str(((cummulative_reward[1] + cummulative_reward[3]) / i_episode)/2))
-    #print("--------MCTS rewards: " + str(((cummulative_reward[1] + cummulative_reward[3]) / i_episode)/2))
+      print("player "+i+" vs. player "+j+" = " + str((cummulative_reward[2] + cummulative_reward[3]) / (2*2*number_of_games)) + " to " +str((cummulative_reward[0] + cummulative_reward[1]) / (2*2*number_of_games)))
+      #print("--------Episode: " + str(i_episode) + " game simulation (s) = " + str(t1 - t0))
+      #print("--------Cummulative reward: " + str(cummulative_reward))
+      #print("--------per game reward: " + str([i /i_episode for i in cummulative_reward] ))
+      #print("--------MCTS rewards: " + str(((cummulative_reward[1] + cummulative_reward[3]) / i_episode)/2))
+      #print("--------MCTS rewards: " + str(((cummulative_reward[1] + cummulative_reward[3]) / i_episode)/2))
 
 
 if __name__ == '__main__':

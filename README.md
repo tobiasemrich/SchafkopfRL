@@ -5,6 +5,7 @@ Framework for developing an AI agent to play the bavarian four-player card game 
 - <b>Agents</b>: A set of AI agents that are able to play with different degrees of strength
   - [RL Agent](#rl-agent): Agent that acts based on an policy neural network which is trained though proximal policy optimization. 
   - [PIMC Agent](#pimc-agent): Agent utilizing Monte-Carlo-Tree Search for imperfect information games. 
+  - [Immitation Agent](#immitation-agent): Agent learning behaviour from real-world games
   - [Baseline Agents](#baseline-agents): Agents with simple hard-coded rules.
 - <b>Trainer:</b>  Trainer class for training the model based-players
 
@@ -103,6 +104,8 @@ The HP PIMC Agent learns an NN to estimate the distribution of remaining cards a
   
 The hand prediction NN is trained by iteratively playing n = 400 games in self-play and then updating. 
 
+##Immitation Agent
+This agent uses the same policy network as the LSTM base RL-Agent (without the value head). It trained entirely by real world games (trying to immitate human behaviour) and not by self-play. The agent reaches an accuracy (predicting the human action) of 83.66% when beeing trained on 75K games.
 
 ## Baseline Agents
 - Random: performs each action random (only valid actions)
@@ -112,25 +115,33 @@ The hand prediction NN is trained by iteratively playing n = 400 games in self-p
    
 ## Current Results
 
-In general HP-PIMC > PIMC > PPO (lstm) > PPO (linear) > rule-based > random-coward > random  
+In general HP-PIMC > Immitation >  PIMC > PPO (lstm) > PPO (linear) > rule-based > random-coward > random  
 
-These results are just preliminary and subject to change. The shown numbers are cents/game
+These results were achieved by letting face of two agents (a and b) at a time for 2*1000 games (always the same 1000 starting hands for all face-offs):
+- player 0 and player 1 are played by agent a (for the first 1000 games then by agent b for the second 1000 games)
+- player 2 and player 3 are played by agent b (for the first 1000 games then by agent a for the second 1000 games)
+
+The shown numbers are cents/game
 
 <table>
-    <tr><th></th><th>HP PIMC(10, 40)</th><th>PIMC(10, 40)</th><th>PPO (lstm)</th><th>PPO (linear)</th><th>rule-based</th><th>random-coward</th><th>random</th></tr>
-    <tr><td>HP PIMC(10, 40)</td><td> - </td><td>4.9</td><td>2.5</td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>PIMC(10, 40)</td><td>- 4.9</td><td> - </td><td>~ 8.0</td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>PPO (lstm)</td><td>-2.5</td><td>~ - 8.0</td><td> - </td><td></td><td>9.7</td><td>14.2</td><td></td></tr>
-    <tr><td>PPO (linear)</td><td></td><td></td><td></td><td> - </td><td>8.5</td><td>11.2</td><td></td></tr>
+    <tr><th></th><th>HP PIMC(10, 40)</th><th>Immitation</th><th>PIMC(10, 40)</th><th>RL (lstm)</th><th>RL (linear)</th><th>rule-based</th><th>random-coward</th><th>random</th></tr>
+    <tr><td>HP PIMC(10, 40)</td><td> - </td><td> 2.39 </td><td>1.23</td><td>6.7</td><td></td><td>23.925</td><td>24.105</td><td>198.3</td></tr>
+    <tr><td>Immitation</td><td> -2.39 </td><td> - </td><td> 0.52 </td><td> 2.145 </td><td></td><td>5.59</td><td>8.71</td><td>140.34</td></tr>
+    <tr><td>PIMC(10, 40)</td><td>-1.23</td><td> -0.52 </td><td> - </td><td>4.625</td><td></td><td>18.055</td><td>25.04</td><td>205.545</td></tr>
+    <tr><td>RL (lstm)</td><td> -6.7 </td><td>-2.145</td><td>-4.625</td><td> - </td><td></td><td>8.05</td><td>10.0</td><td>137.985</td></tr>
+    <tr><td>RL (linear)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 </table>
 
 ## Next Steps
 - [ ] Rework Schafkopf_env to be compatible with RLLib
-- [ ] Train policy network on real data
+- [ ] Learn policy network from real data
+    - [x] Train Immitation Agent
+    - [ ] Optimize Network for immitation agent
+    - [ ] train RL agent based on Immitation Agent.
 - [ ] Implement MCTS with policy heuristic (e.g., Alpha Zero)
   - [ ] Change value output of actor critic (to value of each actor)
 - [ ] add an additional prediction head to actor critic for prediction of teams
-- [ ] complete the tournament (current results)
+- [x] complete the tournament (current results)
 - [ ] actor-critic with no weight sharing
 
 ## Notes

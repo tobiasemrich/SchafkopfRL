@@ -104,7 +104,7 @@ The HP PIMC Agent learns an NN to estimate the distribution of remaining cards a
   
 The hand prediction NN is trained by iteratively playing n = 400 games in self-play and then updating. 
 
-##Immitation Agent
+## Immitation Agent
 This agent uses the same policy network as the LSTM base RL-Agent (without the value head). It trained entirely by real world games (trying to immitate human behaviour) and not by self-play. The agent reaches an accuracy (predicting the human action) of 83.66% when beeing trained on 75K games.
 
 ## Baseline Agents

@@ -36,8 +36,6 @@ def main():
       game_states, game_actions = get_states_actions(game)
       states += game_states
       actions += game_actions
-      if count == 10:
-        break
 
   '''
   with open('dataset.pkl', 'wb') as output:
@@ -56,8 +54,8 @@ def main():
   train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
 
-  training_generator = data.DataLoader(train_dataset, collate_fn=train_dataset.custom_collate,batch_size=10000, shuffle=True)
-  testing_generator = data.DataLoader(test_dataset, collate_fn=test_dataset.custom_collate, batch_size=10000)
+  training_generator = data.DataLoader(train_dataset, collate_fn=dataset.custom_collate,batch_size=10000, shuffle=True)
+  testing_generator = data.DataLoader(test_dataset, collate_fn=dataset.custom_collate, batch_size=10000)
 
   # start tensorboard
   tb = program.TensorBoard()
@@ -112,7 +110,7 @@ def main():
     torch.save(immitation_policy.state_dict(), Settings.checkpoint_folder + "/" + str(count).zfill(8) + ".pt")
 
     #testing
-    if epoch % 10 == 0:
+    if epoch % 1 == 0:
       correct = 0
       total = 0
       with torch.no_grad():
@@ -120,7 +118,7 @@ def main():
           pred, val = immitation_policy(states)
           _, predicted = torch.max(pred.data, 1)
           total += actions.size(0)
-          correct += (predicted == actions).sum().item()
+          correct += (predicted.cpu() == actions.cpu()).sum().item()
       Settings.summary_writer.add_scalar('Testing/Accuracy', correct/total, count)
 
 

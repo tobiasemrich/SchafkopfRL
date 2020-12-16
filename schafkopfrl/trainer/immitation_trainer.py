@@ -6,6 +6,7 @@ from sqlitedict import SqliteDict
 
 from dataset import PredictionDatasetLSTM
 from models.actor_critic_lstm import ActorCriticNetworkLSTM
+from models.immitation_policy import ImmitationPolicy
 from public_gamestate import PublicGameState
 from rules import Rules
 from schafkopf_env import SchafkopfEnv
@@ -64,7 +65,7 @@ def main():
   tb.launch()
 
   # loading initial policy
-  immitation_policy = ActorCriticNetworkLSTM().to(Settings.device)
+  immitation_policy = ImmitationPolicy().to(Settings.device)
   # take the newest generation available
   i_episode = max_gen = 0
   generations = [int(f[:8]) for f in listdir(Settings.checkpoint_folder) if f.endswith(".pt")]

@@ -54,7 +54,7 @@ class ImmitationPolicy(nn.Module):
         x = torch.cat((x, torch.squeeze(h2_), torch.squeeze(h4_)), -1)
         x = F.relu(self.fc2(x))
         ax = F.relu(self.fc3(x))
-        ax = self.fc4a(ax)
+        ax = self.fc4(ax)
 
         ax = ax.masked_fill(allowed_actions == 0, -1e9)
 

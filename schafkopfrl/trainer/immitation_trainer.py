@@ -92,7 +92,7 @@ def main():
 
       optimizer.zero_grad()
 
-      pred, val = immitation_policy(states)
+      pred = immitation_policy(states)
       #loss = nn.MSELoss()(pred, actions) #TODO: replace by cross entropy
       loss = nn.CrossEntropyLoss()(pred, actions)
       #loss = nn.NLLLoss()(pred, actions)
@@ -115,7 +115,7 @@ def main():
       total = 0
       with torch.no_grad():
         for i, (states, actions) in enumerate(testing_generator):
-          pred, val = immitation_policy(states)
+          pred = immitation_policy(states)
           _, predicted = torch.max(pred.data, 1)
           total += actions.size(0)
           correct += (predicted.cpu() == actions.cpu()).sum().item()

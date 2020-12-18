@@ -31,11 +31,13 @@ def main():
   for g in games:
     game = games[g]
     if len(game.sonderregeln) == 0:
-      print(g)
       count += 1
       game_states, game_actions = get_states_actions(game)
       states += game_states
       actions += game_actions
+
+      if count % 1000 == 0:
+        print("Read " +str(count) + " normal games")
 
   '''
   with open('dataset.pkl', 'wb') as output:
@@ -51,6 +53,8 @@ def main():
   #split into train/test
   train_size = int(0.9 * len(dataset))
   test_size = len(dataset) - train_size
+
+  torch.manual_seed(0)
   train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
 
@@ -65,12 +69,12 @@ def main():
   # loading initial policy
   immitation_policy = ImmitationPolicy().to(Settings.device)
   # take the newest generation available
-  i_episode = max_gen = 0
+  count = max_gen = 0
   generations = [int(f[:8]) for f in listdir(Settings.checkpoint_folder) if f.endswith(".pt")]
   if len(generations) > 0:
     max_gen = max(generations)
     immitation_policy.load_state_dict(torch.load(Settings.checkpoint_folder + "/" + str(max_gen).zfill(8) + ".pt"))
-    i_episode = max_gen
+    count = max_gen
 
   optimizer = torch.optim.Adam(immitation_policy.parameters(), lr=Settings.lr, betas=Settings.betas,
                                weight_decay=Settings.optimizer_weight_decay)
@@ -78,10 +82,21 @@ def main():
   # training loop
   immitation_policy.train()
 
-  count = 0
 
   for epoch in range(100000):  # epoch
+    # testing
+    if epoch % 1 == 0:
+      correct = 0
+      total = 0
+      with torch.no_grad():
+        for i, (states, actions) in enumerate(testing_generator):
+          pred = immitation_policy(states)
+          _, predicted = torch.max(pred.data, 1)
+          total += actions.size(0)
+          correct += (predicted.cpu() == actions.cpu()).sum().item()
+      Settings.summary_writer.add_scalar('Testing/Accuracy', correct / total, count)
 
+    #training
     for i, (states, actions) in enumerate(training_generator):  #batch
 
       count += 1
@@ -105,21 +120,17 @@ def main():
       # writing game statistics for tensorboard
       Settings.logger.info("Iteration: " + str(count))
       Settings.summary_writer.add_scalar('Training/CrossEntropy_Loss', l, count)
+
+      if count == 10000:
+        for param_group in optimizer.param_groups:
+          param_group['lr'] = 0.0002
     # save the policy
     Settings.logger.info("Saving Checkpoint")
     torch.save(immitation_policy.state_dict(), Settings.checkpoint_folder + "/" + str(count).zfill(8) + ".pt")
 
-    #testing
-    if epoch % 1 == 0:
-      correct = 0
-      total = 0
-      with torch.no_grad():
-        for i, (states, actions) in enumerate(testing_generator):
-          pred = immitation_policy(states)
-          _, predicted = torch.max(pred.data, 1)
-          total += actions.size(0)
-          correct += (predicted.cpu() == actions.cpu()).sum().item()
-      Settings.summary_writer.add_scalar('Testing/Accuracy', correct/total, count)
+
+
+
 
 
 

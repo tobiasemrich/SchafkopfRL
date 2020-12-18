@@ -61,7 +61,7 @@ class ImmitationPolicy(nn.Module):
 
         return ax, 0
 
-    def preprocess(state):
+    def preprocess(self, state):
         """
         state_size:
         - info_vector: 70 (74)

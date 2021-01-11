@@ -28,13 +28,13 @@ class ImmitationPolicy(nn.Module):
     def __init__(self):
         super(ImmitationPolicy, self).__init__()
 
-        self.hidden_neurons = 512
+        self.hidden_neurons = 32
 
-        self.lstm_course_of_game = nn.LSTM(16, self.hidden_neurons, num_layers=2)  # Input dim is 16, output dim is hidden_neurons
+        self.lstm_course_of_game = nn.LSTM(16, self.hidden_neurons, num_layers=1)  # Input dim is 16, output dim is hidden_neurons
         self.lstm_current_trick = nn.LSTM(16, self.hidden_neurons, num_layers=2)  # Input dim is 16, output dim is hidden_neurons
 
         self.fc1 = nn.Linear(70, self.hidden_neurons)
-        self.fc2 = nn.Linear(self.hidden_neurons*3, self.hidden_neurons)
+        self.fc2 = nn.Linear(self.hidden_neurons*2, self.hidden_neurons)
         self.fc3 = nn.Linear(self.hidden_neurons, self.hidden_neurons)
         self.fc4 = nn.Linear(self.hidden_neurons, 43)
 
@@ -43,23 +43,25 @@ class ImmitationPolicy(nn.Module):
 
 
     def forward(self, state_encoding):
-        [info_vector, course_of_game, current_trick, allowed_actions] = state_encoding
+        [info_vector, course_of_game, allowed_actions] = state_encoding
 
 
-        output, ([h1_,h2_], [c1_,c2_]) = self.lstm_course_of_game(course_of_game)
+        #output, ([h1_,h2_], [c1_,c2_]) = self.lstm_course_of_game(course_of_game)
+        out, (h, c) = self.lstm_course_of_game(course_of_game)
 
-        output, ([h3_, h4_], [c3_, c4_]) = self.lstm_current_trick(current_trick)
+        #output, ([h3_, h4_], [c3_, c4_]) = self.lstm_current_trick(current_trick)
 
 
         x = F.relu(self.fc1(info_vector))
-        x = torch.cat((x, torch.squeeze(h2_), torch.squeeze(h4_)), -1)
+        #x = torch.cat((x, torch.squeeze(h2_)), -1)
+        x = torch.cat((x, torch.squeeze(h)), -1)
         x = F.relu(self.fc2(x))
-        ax = F.relu(self.fc3(x))
-        ax = self.fc4(ax)
+        #x = F.relu(self.fc3(x))
+        x = self.fc4(x)
 
-        ax = ax.masked_fill(allowed_actions == 0, -1e9)
+        x = x.masked_fill(allowed_actions == 0, -1e9)
 
-        return ax, 0
+        return x, 0
 
     def preprocess(self, state):
         """
@@ -122,7 +124,6 @@ class ImmitationPolicy(nn.Module):
         # course of game
         # course_of_game_enc = [torch.zeros(16).float().to(device='cuda')]
         course_of_game_enc = np.zeros((1, 16))
-        current_trick_enc = np.zeros((1, 16))
         for trick in range(len(game_state.course_of_game)):
             for card in range(len(game_state.course_of_game[trick])):
                 if game_state.course_of_game[trick][card] == [None, None]:
@@ -134,12 +135,12 @@ class ImmitationPolicy(nn.Module):
                     card_player = (card_player + card) % 4
                     card_player_enc = np.zeros(4)
                     card_player_enc[(card_player - ego_player) % 4] = 1
-                    if trick != game_state.trick_number:
-                        course_of_game_enc = np.vstack((course_of_game_enc, np.append(
+                    #if trick != game_state.trick_number:
+                    course_of_game_enc = np.vstack((course_of_game_enc, np.append(
                             np.array(two_hot_encode_card(game_state.course_of_game[trick][card])), card_player_enc)))
-                    else:
-                        current_trick_enc = np.vstack((current_trick_enc, np.append(
-                            np.array(two_hot_encode_card(game_state.course_of_game[trick][card])), card_player_enc)))
+                    #else:
+                    #    current_trick_enc = np.vstack((current_trick_enc, np.append(
+                    #        np.array(two_hot_encode_card(game_state.course_of_game[trick][card])), card_player_enc)))
 
         info_vector = np.concatenate((game_stage, game_enc, game_player_enc, contra_retour, first_player_enc,
                                       np.true_divide(game_state.scores, 120),
@@ -152,10 +153,6 @@ class ImmitationPolicy(nn.Module):
         course_of_game_enc = torch.tensor(course_of_game_enc).float().to(device=Settings.device)
         course_of_game_enc = course_of_game_enc.view(len(course_of_game_enc), 1, 16)
 
-        if current_trick_enc.shape[0] > 1:
-            current_trick_enc = np.delete(current_trick_enc, 0, 0)
-        current_trick_enc = torch.tensor(current_trick_enc).float().to(device=Settings.device)
-        current_trick_enc = current_trick_enc.view(len(current_trick_enc), 1, 16)
 
         ############### allowed actions ##################
         allowed_actions_enc = np.zeros(43)
@@ -168,5 +165,5 @@ class ImmitationPolicy(nn.Module):
         else:
             allowed_actions_enc[11:] = one_hot_cards(allowed_actions)
 
-        return [torch.tensor(info_vector).float().to(device=Settings.device), course_of_game_enc, current_trick_enc,
+        return [torch.tensor(info_vector).float().to(device=Settings.device), course_of_game_enc,
                 torch.tensor(allowed_actions_enc).float().to(device=Settings.device)]

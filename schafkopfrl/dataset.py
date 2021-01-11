@@ -124,10 +124,9 @@ class PredictionDatasetLSTM(data.Dataset):
           # pack the padded_seq_batch
           packed_seq_batch = torch.nn.utils.rnn.pack_padded_sequence(padded_seq_batch, lengths=seq_lengths,
                                                                      enforce_sorted=False)
-
           states.append(packed_seq_batch)
-      if len(transposed_states) == 4:
-        states.append(torch.stack(transposed_states[3]).detach())
+
+      states.append(torch.stack(transposed_states[len(transposed_states)-1]).detach())
 
       predictions = torch.stack(predictions_batch).detach()
 

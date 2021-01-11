@@ -37,7 +37,6 @@ def main():
       game_states, game_actions = get_states_actions(game, immitation_policy)
       states += game_states
       actions += game_actions
-
       if count % 1000 == 0:
         print("Read " +str(count) + " normal games")
 
@@ -50,7 +49,7 @@ def main():
     states = pickle.load(input)
     actions = pickle.load(input)
   '''
-  dataset = PredictionDatasetLSTM(states, actions, 2)
+  dataset = PredictionDatasetLSTM(states, actions, 1)
 
   #split into train/test
   train_size = int(0.9 * len(dataset))
@@ -91,7 +90,7 @@ def main():
       total = 0
       with torch.no_grad():
         for i, (states, actions) in enumerate(testing_generator):
-          pred = immitation_policy(states)
+          pred, _ = immitation_policy(states)
           _, predicted = torch.max(pred.data, 1)
           total += actions.size(0)
           correct += (predicted.cpu() == actions.cpu()).sum().item()
@@ -108,7 +107,7 @@ def main():
 
       optimizer.zero_grad()
 
-      pred = immitation_policy(states)
+      pred, _ = immitation_policy(states)
       #loss = nn.MSELoss()(pred, actions) #TODO: replace by cross entropy
       loss = nn.CrossEntropyLoss()(pred, actions)
       #loss = nn.NLLLoss()(pred, actions)
@@ -122,9 +121,9 @@ def main():
       Settings.logger.info("Iteration: " + str(count))
       Settings.summary_writer.add_scalar('Training/CrossEntropy_Loss', l, count)
 
-      if count == 10000:
+      if count == 100000:
         for param_group in optimizer.param_groups:
-          param_group['lr'] = 0.0002
+          param_group['lr'] = 0.0005
     # save the policy
     Settings.logger.info("Saving Checkpoint")
     torch.save(immitation_policy.state_dict(), Settings.checkpoint_folder + "/" + str(count).zfill(8) + ".pt")

@@ -6,6 +6,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from dataset import ExperienceDatasetLinear, ExperienceDatasetLSTM
 from models.actor_critic_lstm import ActorCriticNetworkLSTM
+from models.actor_critic_sep import ActorCriticNetworkLSTMSep
 
 
 class Settings:
@@ -28,15 +29,15 @@ class Settings:
   #device = torch.device("cpu")
   # what model to use
   #model, dataset = ActorCriticNetworkLinear,ExperienceDatasetLinear
-  model, dataset = ActorCriticNetworkLSTM, ExperienceDatasetLSTM
+  model, dataset = ActorCriticNetworkLSTMSep, ExperienceDatasetLSTM
 
   ############################# Hyperparameters #############################################
-  update_games = 100  # update policy every n games
+  update_games = 10000  # update policy every n games
   batch_size = update_games * 22
   mini_batch_size =  batch_size # make this as large as possible to fit in gpu
 
   eval_games = 500
-  checkpoint_folder = "../policies"
+  checkpoint_folder = "../../policies"
 
   # lr = 0.0002
   lr = 0.0002

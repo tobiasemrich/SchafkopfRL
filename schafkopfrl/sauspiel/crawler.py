@@ -22,10 +22,10 @@ def crawl():
   #login
   elem = driver.find_element_by_id("ontop_login")
   elem.clear()
-  elem.send_keys("xxxxx")
+  elem.send_keys("xxx")
   elem = driver.find_element_by_id("login_inline_password")
   elem.clear()
-  elem.send_keys("xxxxx")
+  elem.send_keys("xxx")
   elem.send_keys(Keys.RETURN)
 
   #setup database
@@ -33,13 +33,17 @@ def crawl():
 
   normal_games = 0
 
-  for i in range (100133120, 101000000):
+  for i in range (330000000, 1000000000):
     print(i)
     #view game
     driver.get('https://www.sauspiel.de/spiele/'+str(i))
 
     gt = GameTranscript()
-    gt.fast_parse(driver)
+    try:
+      gt.fast_parse(driver)
+    except:
+      print("could not parse game")
+      continue
 
     if len(gt.sonderregeln) == 0:
       normal_games += 1

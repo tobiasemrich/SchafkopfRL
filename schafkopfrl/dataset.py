@@ -81,11 +81,11 @@ class ExperienceDatasetLSTM(data.Dataset):
 
           states.append(packed_seq_batch)
 
-      states.append(torch.stack(transposed_states[3]).detach())
+      states.append(torch.stack(transposed_states[-1]).detach())
 
       actions = torch.stack(actions_batch).detach()
       logprobs = torch.stack(logprobs_batch).detach()
-      rewards = torch.tensor(rewards_batch)
+      rewards = torch.tensor(rewards_batch).float()
 
       return [states, actions, logprobs, rewards]
 

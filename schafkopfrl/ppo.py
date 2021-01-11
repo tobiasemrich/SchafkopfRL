@@ -58,7 +58,7 @@ class PPO:
     rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-5)
 
     # Create dataset from collected experiences
-    dataset = Settings.dataset(memory.states, memory.actions, memory.logprobs,rewards)
+    dataset = Settings.dataset(memory.states, memory.actions, memory.logprobs,rewards, 1)
     # experience_dataset = ExperienceDatasetLSTM(memory.states, memory.actions, memory.allowed_actions, memory.logprobs, rewards)
 
     # training_generator = data.DataLoader(experience_dataset, collate_fn=experience_dataset_linear.custom_collate, batch_size=self.batch_size, shuffle=True)

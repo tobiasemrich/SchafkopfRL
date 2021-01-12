@@ -27,7 +27,7 @@ class ActorCriticNetworkLSTMSep(nn.Module):
     def __init__(self):
         super(ActorCriticNetworkLSTMSep, self).__init__()
 
-        self.hidden_neurons = 64
+        self.hidden_neurons = 128
 
         self.lstm_course_of_game_actor = nn.LSTM(16, self.hidden_neurons, num_layers=1)  # Input dim is 16, output dim is hidden_neurons
         self.fc1_actor = nn.Linear(70, self.hidden_neurons)
@@ -52,7 +52,7 @@ class ActorCriticNetworkLSTMSep(nn.Module):
         x = F.relu(self.fc1_actor(info_vector))
         x = torch.cat((x, torch.squeeze(ha)), -1)
         x = F.relu(self.fc2_actor(x))
-        x = F.relu(self.fc3_actor(x))
+        x = self.fc3_actor(x)
         x = x.masked_fill(allowed_actions == 0, -1e9)
         x = F.softmax(x, dim=-1)
 
@@ -61,7 +61,7 @@ class ActorCriticNetworkLSTMSep(nn.Module):
         y = F.relu(self.fc1_critic(info_vector))
         y = torch.cat((y, torch.squeeze(hc)), -1)
         y = F.relu(self.fc2_critic(y))
-        y = F.relu(self.fc3_critic(y))
+        y = self.fc3_critic(y)
 
         return x, y
 

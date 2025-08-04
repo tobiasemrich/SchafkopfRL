@@ -9,7 +9,7 @@ from environment.rules import Rules
 
 class SchafkopfEnv():
     
-    def __init__(self, seed=None):
+    def __init__(self):
         super().__init__()
         self.public_gamestate = None
         self.player_cards = [None, None, None, None]

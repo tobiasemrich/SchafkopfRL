@@ -4,3 +4,4 @@ gymnasium
 dm_tree
 scipy
 pillow
+tensorboard

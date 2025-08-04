@@ -6,7 +6,7 @@ from ray.rllib.core.rl_module.multi_rl_module import MultiRLModuleSpec
 from ray.rllib.core.rl_module.rl_module import RLModuleSpec
 
 from environment.multi_agent_env import SchafkopfMultiAgentEnv
-from policy.lstmrlmodule import LSTMRLModule
+from policy.linearrlmodule import LinearRLModule
 from policy.rulebased_policy import RuleBasedRLModule
 
 from evaluation import TournamentEvaluation
@@ -24,21 +24,19 @@ def main():
         .environment("SchafkopfMultiAgentEnv")
         .multi_agent(
             policies={
-                "lstm_policy",
+                "linear_policy",
                 "rulebased_policy"
             },
-            policies_to_train=["lstm_policy"],
-            policy_mapping_fn=lambda agent_id, episode, **kwargs: "lstm_policy",
+            policies_to_train=["linear_policy"],
+            policy_mapping_fn=lambda agent_id, episode, **kwargs: "linear_policy",
         )
         .rl_module(
             rl_module_spec=MultiRLModuleSpec(
                 rl_module_specs={
-                    "lstm_policy": RLModuleSpec(
-                        module_class=LSTMRLModule,
+                    "linear_policy": RLModuleSpec(
+                        module_class=LinearRLModule,
                         model_config={
                             "fcnet_hiddens": [64, 64],
-                            "lstm_hidden_size": 128,
-                            "lstm_num_layers": 2
                         },
                     ),
                     "rulebased_policy": RLModuleSpec(module_class=RuleBasedRLModule)
@@ -59,7 +57,7 @@ def main():
         #.learners(num_learners=0, num_gpus_per_learner=1)
         .evaluation(
             evaluation_interval=1,  # evaluate every N training iterations
-            custom_evaluation_function=TournamentEvaluation("lstm_policy").rulebased_tournament_eval_fn
+            custom_evaluation_function=TournamentEvaluation("linear_policy").rulebased_tournament_eval_fn
         )
         # .callbacks(DebugCallbacks)
     )

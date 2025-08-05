@@ -56,8 +56,8 @@ def main():
         .learners(num_learners=1)
         #.learners(num_learners=0, num_gpus_per_learner=1)
         .evaluation(
-            evaluation_interval=1,  # evaluate every N training iterations
-            custom_evaluation_function=TournamentEvaluation("linear_policy").rulebased_tournament_eval_fn
+            evaluation_interval=3,  # evaluate every N training iterations
+            custom_evaluation_function=TournamentEvaluation("linear_policy", 30).rulebased_tournament_eval_fn
         )
         # .callbacks(DebugCallbacks)
     )

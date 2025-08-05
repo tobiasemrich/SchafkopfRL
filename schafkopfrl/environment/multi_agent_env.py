@@ -43,7 +43,7 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         return 4
 
     def reset(self, *, seed=None, options=None):
-        state, _ = self.env.reset(seed=None)
+        state, _ = self.env.reset(seed=seed)
         self.action_history = np.full((self.MAX_ACTIONS, 2), -1, dtype=np.int32) # represents array of (action, player_id) tuples
         self.action_history_len = 0
         # RLlib expects a dict of obs per agent

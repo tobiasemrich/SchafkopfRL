@@ -12,8 +12,9 @@ from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
 from policy.rulebased_policy import RuleBasedRLModule
 
 class TournamentEvaluation:
-    def __init__(self, rl_module_name: str):
+    def __init__(self, rl_module_name: str, n_rounds: int):
         self.rl_module_name = rl_module_name
+        self.n_episodes = n_rounds
 
     def rulebased_tournament_eval_fn(self, algorithm: Algorithm, eval_workers: EnvRunnerGroup) -> Tuple[ResultDict, int, int]:
 
@@ -24,9 +25,8 @@ class TournamentEvaluation:
         rulebased_policy = RuleBasedRLModule(Discrete(43),None, None, None, None)  
 
         total_rewards = {"policy": 0.0, "rulebased": 0.0}
-        n_episodes = 1
 
-        for i in range(n_episodes):
+        for i in range(self.n_episodes):
             obs, info = env.reset(seed=i)
             done = False
             rewards = {"player_0": 0.0, "player_1": 0.0, "player_2": 0.0, "player_3": 0.0}
@@ -52,10 +52,10 @@ class TournamentEvaluation:
         
 
         print(env.env.render())
-        mean_reward = total_rewards["policy"] / n_episodes / 2
+        mean_reward = total_rewards["policy"] / self.n_episodes / 2
         print("avg_reward_against_rulebased_policy", mean_reward)
         algorithm.metrics.log_value("avg_reward_against_rulebased_policy", mean_reward, window=1)
-        return {"avg_reward_against_rulebased_policy": mean_reward}, n_episodes, n_episodes
+        return {"avg_reward_against_rulebased_policy": mean_reward}, self.n_episodes, self.n_episodes
 
     def convert_obs_dict_to_tensor(self, obs_dict, device="cpu"):
         return {k: torch.tensor(v, dtype=torch.int32, device=device).unsqueeze(0) for k, v in obs_dict.items()} # unsqueezing produces a batch

@@ -45,7 +45,7 @@ def main():
                 }
             )
         )
-        .env_runners(num_env_runners=12)
+        .env_runners(num_env_runners=18)
         .training(
             lr=0.01,
             gamma=0.9,
@@ -58,8 +58,8 @@ def main():
         .learners(num_learners=1)
         #.learners(num_learners=0, num_gpus_per_learner=1)
         .evaluation(
-            evaluation_interval=1,  # evaluate every N training iterations
-            custom_evaluation_function=TournamentEvaluation("lstm_policy").rulebased_tournament_eval_fn
+            evaluation_interval=3,  # evaluate every N training iterations
+            custom_evaluation_function=TournamentEvaluation("lstm_policy", 30).rulebased_tournament_eval_fn
         )
         # .callbacks(DebugCallbacks)
     )

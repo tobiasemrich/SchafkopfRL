@@ -9,9 +9,8 @@ from torch import nn
 
 
 class RuleBasedRLModule(RLModule):
-    def __init__(self, observation_space, action_space, inference_only, model_config, catalog_class):
+    def __init__(self):
         super().__init__()
-        self.action_space = action_space
         self.rules = Rules()
 
     @override(RLModule)
@@ -40,10 +39,6 @@ class RuleBasedRLModule(RLModule):
             index = 11 + self.rules.cards.index(card)
         
         return index
-
-    def map_to_action_space(self, env_action):
-        # Convert from Python object (card, game, bool) to int 0-42
-        return 0
 
     def call_game_type(self, player_cards, allowed_games):
         """

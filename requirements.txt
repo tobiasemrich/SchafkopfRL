@@ -5,3 +5,4 @@ dm_tree
 scipy
 pillow
 tensorboard
+sqlitedict

@@ -18,11 +18,9 @@ class TournamentEvaluation:
 
     def rulebased_tournament_eval_fn(self, algorithm: Algorithm, eval_workers: EnvRunnerGroup) -> Tuple[ResultDict, int, int]:
 
-        logger = MetricsLogger()
-
         env = SchafkopfMultiAgentEnv()
         linear_policy = algorithm.env_runner.module._rl_modules[self.rl_module_name]
-        rulebased_policy = RuleBasedRLModule(Discrete(43),None, None, None, None)  
+        rulebased_policy = RuleBasedRLModule()  
 
         total_rewards = {"policy": 0.0, "rulebased": 0.0}
 

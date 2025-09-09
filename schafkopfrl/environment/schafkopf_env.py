@@ -27,14 +27,12 @@ class SchafkopfEnv():
         return state
 
     def reset(self, seed):
-        if seed != None:
-            np.random.seed(seed)
-            random.seed(seed)
+        rnd = random.Random(seed)
         self.public_gamestate = PublicGameState(3)
 
         # deal cards
         cards = self.rules.cards.copy()
-        random.shuffle(cards)
+        rnd.shuffle(cards)
         self.player_cards = [cards[8 * p:8 * (p + 1)] for p in range(4)]
 
         self.public_gamestate.game_stage = Rules.BIDDING
@@ -263,3 +261,12 @@ class SchafkopfEnv():
                     rewards[player_id] = -reward
 
         return rewards
+    
+    def set_state(self, game_state, player_cards):
+        self.public_gamestate = game_state
+        self.player_cards = player_cards
+        state = self._compile_state()
+        if self.public_gamestate.played_cards == 32:
+            return state, self.get_rewards(), True
+        else:
+            return state, [0, 0, 0, 0], False

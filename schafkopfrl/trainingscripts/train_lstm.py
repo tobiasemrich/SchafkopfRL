@@ -1,5 +1,5 @@
 import ray
-from ray import tune
+from ray.tune import Tuner
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune.registry import register_env
 from ray.rllib.core.rl_module.multi_rl_module import MultiRLModuleSpec
@@ -38,7 +38,7 @@ def main():
                         model_config={
                             "fcnet_hiddens": [64, 64],
                             "lstm_hidden_size": 128,
-                            "lstm_num_layers": 2
+                            "lstm_num_layers": 1
                         },
                     ),
                     "rulebased_policy": RLModuleSpec(module_class=RuleBasedRLModule)
@@ -54,9 +54,9 @@ def main():
             grad_clip=0.2
             # entropy_coeff=0.01,
         )
-        #.resources(num_gpus=1)
-        .learners(num_learners=1)
-        #.learners(num_learners=0, num_gpus_per_learner=1)
+        # .resources(num_gpus=1)
+        # .learners(num_learners=1)
+        # .learners(num_learners=1, num_gpus_per_learner=1)
         .evaluation(
             evaluation_interval=3,  # evaluate every N training iterations
             custom_evaluation_function=TournamentEvaluation("lstm_policy", 30).rulebased_tournament_eval_fn
@@ -64,13 +64,25 @@ def main():
         # .callbacks(DebugCallbacks)
     )
 
-    tune.run(
-        "PPO",
-        config=config.to_dict(),
-        storage_path="/ray_results/",
-        stop={"training_iteration": 500},
-        checkpoint_at_end=True
+    tuner = Tuner(
+        trainable="PPO",
+        param_space=config.to_dict(),
+        run_config=ray.air.RunConfig(
+            storage_path="/ray_results/",
+            stop={"training_iteration": 500},
+            checkpoint_config=ray.air.CheckpointConfig(checkpoint_at_end=True),
+        ),
     )
+
+    tuner.fit()
+
+    #tune.run(
+    #    "PPO",
+    #    config=config.to_dict(),
+    #    storage_path="/ray_results/",
+    #    stop={"training_iteration": 500},
+    #    checkpoint_at_end=True
+    #)
 
     
 if __name__ == "__main__":

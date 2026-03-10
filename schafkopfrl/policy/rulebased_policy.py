@@ -3,7 +3,7 @@ from ray.rllib.core import Columns
 from ray.rllib.core.rl_module.rl_module import RLModule
 from ray.rllib.utils.typing import ModuleID
 from ray.rllib.utils.annotations import override
-from environment.rules import Rules 
+from schafkopfrl.environment.rules import Rules 
 import numpy as np
 from torch import nn
 

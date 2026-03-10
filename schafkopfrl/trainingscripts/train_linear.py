@@ -5,11 +5,11 @@ from ray.tune.registry import register_env
 from ray.rllib.core.rl_module.multi_rl_module import MultiRLModuleSpec
 from ray.rllib.core.rl_module.rl_module import RLModuleSpec
 
-from environment.multi_agent_env import SchafkopfMultiAgentEnv
-from policy.linearrlmodule import LinearRLModule
-from policy.rulebased_policy import RuleBasedRLModule
+from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
+from schafkopfrl.policy.linearrlmodule import LinearRLModule
+from schafkopfrl.policy.rulebased_policy import RuleBasedRLModule
 
-from evaluation import TournamentEvaluation
+from schafkopfrl.evaluation import TournamentEvaluation
 
 def main():
 

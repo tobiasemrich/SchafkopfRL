@@ -1,10 +1,9 @@
 import random
-from typing import Dict, Any
 
 import numpy as np
 
-from environment.public_gamestate import PublicGameState
-from environment.rules import Rules
+from .public_gamestate import PublicGameState
+from .rules import Rules
 
 
 class SchafkopfEnv():

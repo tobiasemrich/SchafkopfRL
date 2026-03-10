@@ -5,11 +5,11 @@ from ray.rllib.core import Columns
 from ray.rllib.env.env_runner_group import EnvRunnerGroup
 from ray.rllib.utils.typing import ResultDict
 
-from environment.multi_agent_env import SchafkopfMultiAgentEnv
+from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
 import torch
 from torch.distributions import Categorical
 from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
-from policy.rulebased_policy import RuleBasedRLModule
+from schafkopfrl.policy.rulebased_policy import RuleBasedRLModule
 
 class TournamentEvaluation:
     def __init__(self, rl_module_name: str, n_rounds: int):

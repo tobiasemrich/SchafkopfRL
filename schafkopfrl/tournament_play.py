@@ -1,8 +1,8 @@
 from ray.rllib.core import Columns
 from torch.distributions import Categorical
-from environment.multi_agent_env import SchafkopfMultiAgentEnv
-from policy.mctsrlmodule import MCTSRLModule
-from policy.rulebased_policy import RuleBasedRLModule
+from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
+from schafkopfrl.policy.mctsrlmodule import MCTSRLModule
+from schafkopfrl.policy.rulebased_policy import RuleBasedRLModule
 import torch
 
 

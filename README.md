@@ -11,5 +11,5 @@ Currently switching to RLLib for
 - [x] PIMC agent
 - [ ] HP PIMC Agent
 - [ ] Tournament
-- [ ] Immitation agent
+- [currently] Immitation agent
 

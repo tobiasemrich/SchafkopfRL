@@ -4,7 +4,7 @@ from ray.rllib.utils.annotations import override
 from ray.rllib.models.torch.torch_distributions import TorchCategorical
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 
-from environment.utils import *
+from schafkopfrl.environment.utils import *
 import torch.nn as nn
 import torch
 

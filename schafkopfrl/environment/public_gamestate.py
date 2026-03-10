@@ -1,7 +1,7 @@
 # contains information about the game that is known by all players
 from copy import copy
 
-from environment.rules import Rules
+from .rules import Rules
 
 class PublicGameState:
 

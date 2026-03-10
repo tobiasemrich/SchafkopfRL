@@ -5,7 +5,7 @@ from ray.rllib.models.torch.torch_distributions import TorchCategorical
 from ray.rllib.core.rl_module.apis.value_function_api import ValueFunctionAPI
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 
-from environment.utils import *
+from schafkopfrl.environment.utils import *
 import torch.nn as nn
 import torch
 

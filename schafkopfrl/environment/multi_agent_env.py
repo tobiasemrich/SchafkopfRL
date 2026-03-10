@@ -1,9 +1,11 @@
 from typing import List
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from gymnasium.spaces import Box, Discrete, Dict, MultiBinary
-from environment.schafkopf_env import SchafkopfEnv
-from environment.rules import Rules
-from environment.utils import *
+
+from .public_gamestate import PublicGameState
+from .schafkopf_env import SchafkopfEnv
+from .rules import Rules
+from .utils import *
 import numpy as np
 import torch
 
@@ -129,7 +131,7 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         '''
             Resets the env but with fixed card distributions. Useful for reading data transcripts.
         '''
-        state, _ = self.env.set_state(PublicGameState(3), player_cards)
+        state, _, _ = self.env.set_state(PublicGameState(3), player_cards)
         self.action_history = np.full((self.MAX_ACTIONS, 2), -1, dtype=np.int32) # represents array of (action, player_id) tuples
         self.action_history_len = 0
         # RLlib expects a dict of obs per agent

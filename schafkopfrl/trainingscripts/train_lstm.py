@@ -1,3 +1,8 @@
+import os
+
+import rootutils
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
 import ray
 from ray.tune import Tuner
 from ray.rllib.algorithms.ppo import PPOConfig
@@ -13,9 +18,10 @@ from schafkopfrl.evaluation import TournamentEvaluation
 
 def main():
 
-    ray.init(
-        local_mode=True
-    )
+    storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ray_results")
+    
+
+    ray.init(num_cpus=4)
     # register the environment
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
@@ -45,7 +51,7 @@ def main():
                 }
             )
         )
-        .env_runners(num_env_runners=18)
+        .env_runners(num_env_runners=3)
         .training(
             lr=0.01,
             gamma=0.9,
@@ -68,7 +74,7 @@ def main():
         trainable="PPO",
         param_space=config.to_dict(),
         run_config=ray.air.RunConfig(
-            storage_path="/ray_results/",
+            storage_path=storage_path,
             stop={"training_iteration": 500},
             checkpoint_config=ray.air.CheckpointConfig(checkpoint_at_end=True),
         ),

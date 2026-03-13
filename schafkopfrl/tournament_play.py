@@ -1,3 +1,6 @@
+import rootutils
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
 from ray.rllib.core import Columns
 from torch.distributions import Categorical
 from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
@@ -65,7 +68,7 @@ def main():
       print("player "+str(i)+" vs. player "+str(j)+" = " + str((cummulative_reward[2] + cummulative_reward[3]) / (2*2*number_of_games)) + " to " +str((cummulative_reward[0] + cummulative_reward[1]) / (2*2*number_of_games)))
 
 
-def convert_obs_dict_to_tensor(self, obs_dict, device="cpu"):
+def convert_obs_dict_to_tensor(obs_dict, device="cpu"):
         return {k: torch.tensor(v, dtype=torch.int32, device=device).unsqueeze(0) for k, v in obs_dict.items()} # unsqueezing produces a batch
 
 

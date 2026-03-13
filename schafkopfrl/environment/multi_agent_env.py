@@ -21,7 +21,7 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         
         self.MAX_ACTIONS = 44
         self.NUM_ACTIONS = 43
-        self.action_history = np.full((self.MAX_ACTIONS, 2), -1, dtype=np.int32) # represents array of (action, player_id) tuples
+        self.action_history = np.full((self.MAX_ACTIONS, 2), -1, dtype=np.int32)
         self.action_history_len = 0
 
 
@@ -29,12 +29,12 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         return Dict({
             "player_hand": MultiBinary(32),
             "action_history": Box(
-                low=np.tile([-1, -1], (self.MAX_ACTIONS, 1)),
-                high=np.tile([self.NUM_ACTIONS, 3], (self.MAX_ACTIONS, 1)),
-                shape=(self.MAX_ACTIONS, 2),
+                low=-1,
+                high=self.NUM_ACTIONS,
+                shape=(self.MAX_ACTIONS * 2,),
                 dtype=np.int32
             ),
-            "action_history_len": Discrete(self.MAX_ACTIONS),
+            "action_history_len": Discrete(self.MAX_ACTIONS + 1),
             "action_mask": MultiBinary(self.NUM_ACTIONS)
         })
 
@@ -102,15 +102,15 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
 
         ############### player hand ##################
         # array(32) that is 1 when card is held otherwise 0
-        observation["player_hand"] = one_hot_cards(player_cards)
+        observation["player_hand"] = one_hot_cards(player_cards).astype(np.int8)
 
         ############### action history ##################
-        observation["action_history"] = self.action_history
-        observation["action_history_len"] = self.action_history_len
+        observation["action_history"] = self.action_history.flatten()
+        observation["action_history_len"] = int(self.action_history_len)
 
         ############### action mask ##################
         allowed_actions = self.env.rules.allowed_actions(public_game_state, player_cards)
-        action_mask = np.zeros(43, dtype=np.int32)
+        action_mask = np.zeros(43, dtype=np.int8)
         if public_game_state.game_stage == Rules.BIDDING:
             action_mask[0:9] = one_hot_games(allowed_actions)
         elif public_game_state.game_stage == Rules.CONTRA or public_game_state.game_stage == Rules.RETOUR:

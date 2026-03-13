@@ -1,3 +1,6 @@
+import rootutils
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
 from os import listdir
 from copy import deepcopy
 import torch
@@ -19,10 +22,10 @@ def main():
   all_rows = []
   # load and preprocess database
   count = 0
-  with open('/home/git/SchafkopfRL/data/normal_games.json', 'r') as file:
+  with open('data/normal_games.json', 'r') as file:
     games = json.load(file)
 
-    with open('/home/git/SchafkopfRL/expert_data.jsonl', 'w') as f:
+    with open('data/expert_data.jsonl', 'w') as f:
 
       for game_id, g in enumerate(games):
         game = g # GameTranscript.from_dict(g)
@@ -209,8 +212,8 @@ def get_states_actions(game_transcript, game_id):
   for agent in env.agents:
     agent_steps = rows_by_agent[agent]
     for i, (obs, action, reward) in enumerate(agent_steps):
-      # next_obs is the next obs for the same agent, or None if last step for this agent
-      next_obs = agent_steps[i + 1][0] if i < len(agent_steps) - 1 else None # TODO: would need dummy value here if it was used
+      # next_obs is the next obs for the same agent, or a copy of current obs for the last step
+      next_obs = agent_steps[i + 1][0] if i < len(agent_steps) - 1 else obs
       
       # terminateds is True only for the last step of this agent's sequence
       is_last_step = (i == len(agent_steps) - 1)
@@ -219,18 +222,24 @@ def get_states_actions(game_transcript, game_id):
       step_reward = final_rewards.get(agent, 0.0) if is_last_step else reward
       
       final_rows.append({
-        "player_hand": obs["player_hand"],
-        "action_history": obs["action_history"][:, 0], # need to make this 1D?
-        "player_history": obs["action_history"][:, 1],
-        "action_history_len": obs["action_history_len"],
-        "action_mask": obs["action_mask"],
+        "obs": {
+          "player_hand": obs["player_hand"],
+          "action_history": obs["action_history"],
+          "action_history_len": obs["action_history_len"],
+          "action_mask": obs["action_mask"],
+        },
+        "new_obs": {
+          "player_hand": next_obs["player_hand"],
+          "action_history": next_obs["action_history"],
+          "action_history_len": next_obs["action_history_len"],
+          "action_mask": next_obs["action_mask"],
+        },
         "actions": action,
         "rewards": step_reward,
-        # "next_obs": next_obs,
         "terminateds": is_last_step,
         "truncateds": False,
         "agent_id": agent,
-        "episode_id": game_id,
+        "eps_id": game_id,
       })
   
   return final_rows

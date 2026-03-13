@@ -1,4 +1,5 @@
 ray[data,train,tune,serve]
+pandas>=2.0,<3.0
 torch
 gymnasium
 dm_tree

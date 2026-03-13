@@ -1,3 +1,6 @@
+import rootutils
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
 import ray
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig

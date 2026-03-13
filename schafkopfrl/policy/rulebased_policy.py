@@ -9,8 +9,8 @@ from torch import nn
 
 
 class RuleBasedRLModule(RLModule):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.rules = Rules()
 
     @override(RLModule)

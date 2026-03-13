@@ -59,13 +59,12 @@ class LSTMRLModule(RLModule, ValueFunctionAPI, nn.Module):
         self._policy_net.apply(self.init_weights)
         self._value_net.apply(self.init_weights)
 
-        self.dev = torch.device("cuda" if torch.cuda.is_available() and torch.cuda.device_count() == 1 else "cpu")
-        self.to(self.dev)
-
     def _get_input_tensor(self, batch):
-        player_hand = batch["obs"]["player_hand"].to(self.dev)  # shape: (B, 32)
-        action_history = batch["obs"]["action_history"].to(self.dev)  # shape: (B, T, 2)
-        lengths = batch["obs"]["action_history_len"].to(self.dev)  # shape: (B,)
+        player_hand = batch["obs"]["player_hand"]  # shape: (B, 32)
+        action_history_flat = batch["obs"]["action_history"]  # shape: (B, 88)
+        B = action_history_flat.shape[0]
+        action_history = action_history_flat.reshape(B, -1, 2)  # (B, 44, 2)
+        lengths = batch["obs"]["action_history_len"].reshape(-1).long()  # always (B,)
 
         history_encoded = self.history_encoder(action_history, lengths)  # (B, D)
         x = torch.cat([player_hand, history_encoded], dim=-1)  # (B, 32 + H)
@@ -76,7 +75,7 @@ class LSTMRLModule(RLModule, ValueFunctionAPI, nn.Module):
         x = self._get_input_tensor(batch)
         logits = self._policy_net(x)
 
-        action_mask = batch["obs"]["action_mask"].to(self.dev)
+        action_mask = batch["obs"]["action_mask"]
         inf_mask = torch.clamp(torch.log(action_mask), min=FLOAT_MIN)
         masked_logits = logits + inf_mask
 
@@ -125,8 +124,8 @@ class LSTMHistoryEncoder(nn.Module):
 
     def forward(self, action_history, lengths):
         # action_history: (B, T, 2) => action_id, player_id
-        action_ids = action_history[:, :, 0] + 1  # pad -1 → 0
-        player_ids = action_history[:, :, 1] + 1
+        action_ids = action_history[:, :, 0].long() + 1  # pad -1 → 0
+        player_ids = action_history[:, :, 1].long() + 1
 
         action_emb = self.action_embed(action_ids)
         player_emb = self.player_embed(player_ids)

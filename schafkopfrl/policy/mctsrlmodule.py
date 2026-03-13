@@ -5,10 +5,14 @@ from ray.rllib.models.torch.torch_distributions import TorchCategorical
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 
 from schafkopfrl.environment.utils import *
+from schafkopfrl.environment.rules import Rules
+from schafkopfrl.environment.schafkopf_env import SchafkopfEnv
+from schafkopfrl.environment.public_gamestate import PublicGameState
 import torch.nn as nn
 import torch
+import random
 
-from policy.mcts.mct import MonteCarloTree
+from schafkopfrl.policy.mcts.mct import MonteCarloTree
 
 class MCTSRLModule(RLModule):
 

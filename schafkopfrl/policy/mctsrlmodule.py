@@ -14,6 +14,8 @@ import random
 
 from schafkopfrl.policy.mcts.mct import MonteCarloTree
 
+_NONE_CARD = Rules.NONE_CARD
+
 class MCTSRLModule(RLModule):
 
     def __init__(self, samples, playouts):
@@ -70,22 +72,24 @@ class MCTSRLModule(RLModule):
 
         best_action = max(cummulative_action_count_rewards.items(), key=lambda x : x[1][0])[0]
         visits = cummulative_action_count_rewards[best_action][0]
-        if isinstance(best_action, tuple):
-            best_action = list(best_action)
         return best_action, visits / sum([x[0] for x in cummulative_action_count_rewards.values()])
 
     def sample_player_hands(self, game_state, ego_player_hand):
 
-
         # precomputations
-        played_cards = [card for trick in game_state.course_of_game for card in trick if card != [None, None]]
-        remaining_cards = [card for card in self.rules.cards if ((card not in played_cards) and (card not in ego_player_hand))]
+        played_cards_set = set()
+        for trick in game_state.course_of_game:
+            for card in trick:
+                if card != _NONE_CARD:
+                    played_cards_set.add(card)
+        ego_set = set(ego_player_hand)
+        remaining_cards = [card for card in self.rules.cards if card not in played_cards_set and card not in ego_set]
 
         needed_player_cards = [8, 8, 8, 8]
 
         for trick in range(game_state.trick_number + 1):
             for i, card in enumerate(game_state.course_of_game_playerwise[trick]):
-                if card != [None, None]:
+                if card != _NONE_CARD:
                     needed_player_cards[i] -= 1
 
         needed_player_cards[game_state.current_player] = 0
@@ -140,7 +144,7 @@ class MCTSRLModule(RLModule):
                 else:
                     action = eval_game_state.course_of_game_playerwise[eval_game_state.trick_number][
                         eval_game_state.current_player]
-                    if action == [None, None]:
+                    if action == _NONE_CARD:
                         break
                     elif action not in allowed_actions:
                         valid_card_distribution = False

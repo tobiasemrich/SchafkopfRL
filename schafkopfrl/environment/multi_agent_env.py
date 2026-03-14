@@ -115,7 +115,7 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
             action_mask[0:9] = one_hot_games(allowed_actions)
         elif public_game_state.game_stage == Rules.CONTRA or public_game_state.game_stage == Rules.RETOUR:
             action_mask[9] = 1
-            if np.any(allowed_actions):
+            if any(allowed_actions):
                 action_mask[10] = 1
         else:
             action_mask[11:] = one_hot_cards(allowed_actions)

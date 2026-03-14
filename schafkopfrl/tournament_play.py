@@ -18,7 +18,7 @@ def main():
 
   participants = [pimc_policy, rulebased_policy]
 
-  number_of_games = 1000
+  number_of_games = 10
 
   for i in range(len(participants)):
     for j in range(i+1, len(participants)):

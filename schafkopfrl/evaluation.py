@@ -9,6 +9,7 @@ from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
 import torch
 from torch.distributions import Categorical
 from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
+from ray.rllib.utils.metrics import EVALUATION_RESULTS, ENV_RUNNER_RESULTS
 from schafkopfrl.policy.rulebased_policy import RuleBasedRLModule
 
 class TournamentEvaluation:
@@ -52,7 +53,18 @@ class TournamentEvaluation:
         print(env.env.render())
         mean_reward = total_rewards["policy"] / self.n_episodes / 2
         print("avg_reward_against_rulebased_policy", mean_reward)
-        algorithm.metrics.log_value("avg_reward_against_rulebased_policy", mean_reward, window=1)
+        algorithm.metrics.log_value(
+            "avg_reward_against_rulebased_policy",
+            mean_reward,
+            window=1,
+        )
+        # Seed the evaluation key so RLlib's peek() doesn't raise KeyError
+        if not algorithm.metrics._key_in_stats(
+            (EVALUATION_RESULTS, ENV_RUNNER_RESULTS)
+        ):
+            algorithm.metrics._set_key(
+                (EVALUATION_RESULTS, ENV_RUNNER_RESULTS), {}
+            )
         return {"avg_reward_against_rulebased_policy": mean_reward}, self.n_episodes, self.n_episodes
 
     def convert_obs_dict_to_tensor(self, obs_dict, device="cpu"):

@@ -55,7 +55,7 @@ class RuleBasedRLModule(RLModule):
         """
 
         # solo heuristic
-        for solo in [[0, 2], [1, 2], [2, 2], [3, 2]]:
+        for solo in [(0, 2), (1, 2), (2, 2), (3, 2)]:
             trump_count = 0
             for card in self.rules.get_sorted_trumps(solo):
                 if card in player_cards:
@@ -65,43 +65,43 @@ class RuleBasedRLModule(RLModule):
 
         # wenz heurisitc
         wenz_count = len(
-            [card for card in [[0, 3], [1, 3], [2, 3], [3, 3]] if card in player_cards]
+            [card for card in [(0, 3), (1, 3), (2, 3), (3, 3)] if card in player_cards]
         )
         spazen_count = 0
         if wenz_count >= 2:
             for color in range(4):
-                if [color, 7] in player_cards:
+                if (color, 7) in player_cards:
                     continue
                 for number in range(7):
                     if number == 3:
                         continue
-                    if [color, number] in player_cards:
+                    if (color, number) in player_cards:
                         spazen_count += 1
             if spazen_count < 2:
-                return [None, 1]
+                return (None, 1)
 
         # sauspiel heuristic
         trumps = [
             card
-            for card in self.rules.get_sorted_trumps([0, 0])
+            for card in self.rules.get_sorted_trumps((0, 0))
             if card in player_cards
         ]
         if len(trumps) >= 4:
             non_trump_cards = [card for card in player_cards if card not in trumps]
             allowed_saupiele = [
-                game for game in allowed_games if game in [[0, 0], [2, 0], [3, 0]]
+                game for game in allowed_games if game in [(0, 0), (2, 0), (3, 0)]
             ]
 
             best_color = -1
             best_color_count = 10
             if len(allowed_saupiele) > 0:
-                for [color, _] in allowed_saupiele:
-                    color_count = len([[color, _] for [color, _] in non_trump_cards])
+                for (color, _) in allowed_saupiele:
+                    color_count = len([(color, _) for (color, _) in non_trump_cards])
                     if color_count < best_color_count:
                         best_color = color
-                return [best_color, 0]
+                return (best_color, 0)
 
-        return [None, None]
+        return (None, None)
 
     def contra_retour(self, player_cards, allowed_double):
         trumps = [
@@ -121,8 +121,8 @@ class RuleBasedRLModule(RLModule):
         # precompute some interesting features
         if game_state.game_stage == Rules.TRICK and len(player_cards) == 8:
             if game_state.game_player == game_state.current_player or (
-                game_state.game_type in [[0, 0], [2, 0], [3, 0]]
-                and [game_state.game_type[0], 7] in player_cards
+                game_state.game_type in [(0, 0), (2, 0), (3, 0)]
+                and (game_state.game_type[0], 7) in player_cards
             ):
                 self.spieler_or_mitspieler = True
             else:
@@ -135,25 +135,25 @@ class RuleBasedRLModule(RLModule):
             if trump in allowed_cards
         ]
         color_aces = [
-            ace for ace in allowed_cards if ace in [[0, 7], [1, 7], [2, 7], [3, 7]]
+            ace for ace in allowed_cards if ace in [(0, 7), (1, 7), (2, 7), (3, 7)]
         ]
         # played colors does not include current trick
         played_colors = {
             c
-            for [c, n] in [
+            for (c, n) in [
                 trick[0]
                 for trick in game_state.course_of_game
-                if trick[3] != [None, None]
+                if trick[3] != (None, None)
             ]
             if n not in [3, 4]
         }
         first_card_in_trick = game_state.course_of_game[game_state.trick_number][0]
 
-        if game_state.game_type in [[0, 0], [2, 0], [3, 0]]:  # Sauspiel
-            if [1, 7] in color_aces:
-                color_aces.remove([1, 7])
-            if [game_state.game_type[0], 7] in color_aces:  # Suchsau
-                color_aces.remove([game_state.game_type[0], 7])
+        if game_state.game_type in [(0, 0), (2, 0), (3, 0)]:  # Sauspiel
+            if (1, 7) in color_aces:
+                color_aces.remove((1, 7))
+            if (game_state.game_type[0], 7) in color_aces:  # Suchsau
+                color_aces.remove((game_state.game_type[0], 7))
             if played_cards_in_trick == 0:
                 if self.spieler_or_mitspieler:
                     # play highest or lowest trump if possible
@@ -176,9 +176,9 @@ class RuleBasedRLModule(RLModule):
                     ):
                         if (
                             len(such_color_cards) > 3
-                            and [game_state.game_type[0], 6] in such_color_cards
+                            and (game_state.game_type[0], 6) in such_color_cards
                         ):
-                            selected_card = [game_state.game_type[0], 6]
+                            selected_card = (game_state.game_type[0], 6)
                         else:
                             selected_card = random.choice(such_color_cards)
                     # play an ace if possible
@@ -198,10 +198,10 @@ class RuleBasedRLModule(RLModule):
                 ):
                     if len(trump_cards) > 0:
                         if first_card_in_trick[0] not in played_colors:
-                            if [1, 7] in trump_cards:
-                                selected_card = [1, 7]
-                            elif [1, 6] in trump_cards:
-                                selected_card = [1, 6]
+                            if (1, 7) in trump_cards:
+                                selected_card = (1, 7)
+                            elif (1, 6) in trump_cards:
+                                selected_card = (1, 6)
                             else:
                                 selected_card = trump_cards[0]
                         else:
@@ -209,13 +209,13 @@ class RuleBasedRLModule(RLModule):
                 # play ace if you have it and color has not already been played
                 elif (
                     first_card_in_trick[0] not in played_colors
-                    and [first_card_in_trick[0], 7] in allowed_cards
+                    and (first_card_in_trick[0], 7) in allowed_cards
                 ):
-                    selected_card = [first_card_in_trick[0], 7]
+                    selected_card = (first_card_in_trick[0], 7)
 
-        elif game_state.game_type in [[0, 2], [1, 2], [2, 2], [3, 2]]:  # Solo
-            if [game_state.game_type[0], 7] in color_aces:
-                color_aces.remove([game_state.game_type[0], 7])
+        elif game_state.game_type in [(0, 2), (1, 2), (2, 2), (3, 2)]:  # Solo
+            if (game_state.game_type[0], 7) in color_aces:
+                color_aces.remove((game_state.game_type[0], 7))
 
             if self.spieler_or_mitspieler:
                 if played_cards_in_trick == 0:
@@ -230,54 +230,54 @@ class RuleBasedRLModule(RLModule):
                     ):
                         if len(trump_cards) > 0:
                             if first_card_in_trick[0] not in played_colors:
-                                if [game_state.game_type[0], 7] in trump_cards:
-                                    selected_card = [game_state.game_type[0], 7]
-                                elif [game_state.game_type[0], 6] in trump_cards:
-                                    selected_card = [game_state.game_type[0], 6]
+                                if (game_state.game_type[0], 7) in trump_cards:
+                                    selected_card = (game_state.game_type[0], 7)
+                                elif (game_state.game_type[0], 6) in trump_cards:
+                                    selected_card = (game_state.game_type[0], 6)
                                 else:
                                     selected_card = trump_cards[0]
                             else:
                                 selected_card = trump_cards[-1]
-                    elif [first_card_in_trick[0], 7] in allowed_cards:
-                        selected_card = [first_card_in_trick[0], 7]
+                    elif (first_card_in_trick[0], 7) in allowed_cards:
+                        selected_card = (first_card_in_trick[0], 7)
             else:  # not solo player
                 pass
 
         else:  # Wenz
             unter = [
                 card
-                for card in [[3, 3], [2, 3], [1, 3], [0, 3]]
+                for card in [(3, 3), (2, 3), (1, 3), (0, 3)]
                 if card in allowed_cards
             ]
             sorted_color_cards = [
-                [0, 7],
-                [0, 6],
-                [0, 5],
-                [0, 4],
-                [0, 2],
-                [0, 1],
-                [0, 0],  # eichel
-                [1, 7],
-                [1, 6],
-                [1, 5],
-                [1, 4],
-                [1, 2],
-                [1, 1],
-                [1, 0],  # gras
-                [2, 7],
-                [2, 6],
-                [2, 5],
-                [2, 4],
-                [2, 2],
-                [2, 1],
-                [2, 0],  # herz
-                [3, 7],
-                [3, 6],
-                [3, 5],
-                [3, 4],
-                [3, 2],
-                [3, 1],
-                [3, 0],
+                (0, 7),
+                (0, 6),
+                (0, 5),
+                (0, 4),
+                (0, 2),
+                (0, 1),
+                (0, 0),  # eichel
+                (1, 7),
+                (1, 6),
+                (1, 5),
+                (1, 4),
+                (1, 2),
+                (1, 1),
+                (1, 0),  # gras
+                (2, 7),
+                (2, 6),
+                (2, 5),
+                (2, 4),
+                (2, 2),
+                (2, 1),
+                (2, 0),  # herz
+                (3, 7),
+                (3, 6),
+                (3, 5),
+                (3, 4),
+                (3, 2),
+                (3, 1),
+                (3, 0),
             ]  # schelle
             sorted_cards = [
                 card for card in sorted_color_cards if card in allowed_cards

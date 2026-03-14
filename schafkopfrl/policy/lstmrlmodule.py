@@ -88,11 +88,12 @@ class LSTMRLModule(RLModule, ValueFunctionAPI, nn.Module):
 
     @override(RLModule)
     def get_state(self, **kwargs):
-        return self.state_dict()
+        return {k: v.cpu() for k, v in self.state_dict().items()}
 
     @override(RLModule)
     def set_state(self, state, **kwargs):
-        self.load_state_dict(state)
+        device = next(self.parameters()).device
+        self.load_state_dict({k: v.to(device) for k, v in state.items()})
 
     @override(RLModule)
     def get_exploration_action_dist_cls(self):

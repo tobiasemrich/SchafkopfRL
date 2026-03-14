@@ -2,7 +2,7 @@ import random
 
 from policy.mcts.node import Node
 from environment.schafkopf_env import SchafkopfEnv
-from copy import deepcopy, copy
+from copy import deepcopy
 
 
 class MonteCarloTree:
@@ -35,15 +35,14 @@ class MonteCarloTree:
     return current_node
 
   def expand(self, node):
-    not_visited_actions = copy(node.allowed_actions)
-    for child in node.children:
-      not_visited_actions.remove(child.previous_action)
+    visited = {child.previous_action for child in node.children}
+    not_visited_actions = [a for a in node.allowed_actions if a not in visited]
 
     #TODO: check if this should be random or chosen by player policy
-    chosen_action = random.choice(tuple(not_visited_actions))
+    chosen_action = random.choice(not_visited_actions)
 
     schafkopf_env = SchafkopfEnv()
-    schafkopf_env.set_state(deepcopy(node.game_state), [copy(node.player_hands[i]) for i in range(4)])
+    schafkopf_env.set_state(deepcopy(node.game_state), [node.player_hands[i][:] for i in range(4)])
     state, _, terminal = schafkopf_env.step(chosen_action)
 
     new_node = Node(parent=node, game_state=state["game_state"], previous_action=chosen_action, player_hands=schafkopf_env.player_cards, allowed_actions=state["allowed_actions"])
@@ -56,7 +55,7 @@ class MonteCarloTree:
 
     #state, reward, terminal = schafkopf_env.set_state(deepcopy(selected_node.game_state), deepcopy(selected_node.player_hands))
     state, reward, terminal = schafkopf_env.set_state(deepcopy(selected_node.game_state),
-                                                      [copy(selected_node.player_hands[i]) for i in range(4)])
+                                                      [selected_node.player_hands[i][:] for i in range(4)])
     while not terminal:
       # choose action at random
       allowed_actions = state["allowed_actions"]
@@ -76,8 +75,5 @@ class MonteCarloTree:
   def get_action_count_rewards(self):
     result = {}
     for child in self.root.children:
-      if isinstance(child.previous_action, list):
-        result[tuple(child.previous_action)] = (child.visits, child.cumulative_rewards)
-      else:
-        result[child.previous_action] = (child.visits, child.cumulative_rewards)
+      result[child.previous_action] = (child.visits, child.cumulative_rewards)
     return result

@@ -108,7 +108,7 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         course_of_game_enc = np.zeros((1, 16))
         for trick in range(len(game_state.course_of_game)):
             for card in range(len(game_state.course_of_game[trick])):
-                if game_state.course_of_game[trick][card] == [None, None]:
+                if game_state.course_of_game[trick][card] == Rules.NONE_CARD:
                     continue
                 else:
                     card_player = game_state.first_player
@@ -133,7 +133,7 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
             allowed_actions_enc[0:9] = one_hot_games(allowed_actions)
         elif game_state.game_stage == Rules.CONTRA or game_state.game_stage == Rules.RETOUR:
             allowed_actions_enc[10] = 1
-            if np.any(allowed_actions):
+            if any(allowed_actions):
                 allowed_actions_enc[9] = 1
         else:
             allowed_actions_enc[11:] = one_hot_cards(allowed_actions)

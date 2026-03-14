@@ -1,11 +1,11 @@
 import math
 
-import numpy as np
+_INF = float('inf')
 
 class Node:
-  '''
-  pretty much copy paste from https://github.com/Taschee/schafkopf/blob/master/schafkopf/players/uct_player.py
-  '''
+  __slots__ = ('parent', 'previous_action', 'children', 'cumulative_rewards',
+               'visits', 'game_state', 'player_hands', 'allowed_actions')
+
   def __init__(self, parent, previous_action, game_state, player_hands, allowed_actions):
     self.parent = parent
     self.previous_action = previous_action
@@ -21,10 +21,7 @@ class Node:
     self.children.append(child_node)
 
   def is_terminal(self):
-    if self.game_state.trick_number == 8:
-      return True
-    else:
-      return False
+    return self.game_state.trick_number == 8
 
   def get_average_reward(self, player):
     if self.visits > 0:
@@ -33,35 +30,32 @@ class Node:
       return 0
 
   def is_leaf(self):
-    if len(self.children) == 0:
-      return True
-    else:
-      return False
-
+    return len(self.children) == 0
 
   def fully_expanded(self):
-    if len(self.children) == len(self.allowed_actions):
-      return True
-    else:
-      return False
+    return len(self.children) == len(self.allowed_actions)
 
   def best_child(self, ucb_const):
-    if not self.is_leaf():
-      return max(self.children, key=lambda child: child.ucb_value(ucb_const))
-
-  def ucb_value(self, ucb_const):
-    if self.visits != 0:
-      average_reward = self.get_average_reward(player=self.parent.game_state.current_player)
-      return average_reward + ucb_const * math.sqrt(2 * math.log(self.parent.visits) / self.visits)
-    else:
-      return np.infty
-
-  def ucb_values(self, ucb_const):
-    return [child.ucb_value(ucb_const) for child in self.children]
+    if self.children:
+      log_2_parent = 2.0 * math.log(self.visits)
+      player = self.game_state.current_player
+      best = None
+      best_val = float('-inf')
+      for child in self.children:
+        if child.visits == 0:
+          return child
+        val = child.cumulative_rewards[player] / child.visits + ucb_const * math.sqrt(log_2_parent / child.visits)
+        if val > best_val:
+          best_val = val
+          best = child
+      return best
 
   def update_visits(self):
     self.visits += 1
 
   def update_rewards(self, rewards):
-    for i in range(len(self.cumulative_rewards)):
-      self.cumulative_rewards[i] += rewards[i]
+    cr = self.cumulative_rewards
+    cr[0] += rewards[0]
+    cr[1] += rewards[1]
+    cr[2] += rewards[2]
+    cr[3] += rewards[3]

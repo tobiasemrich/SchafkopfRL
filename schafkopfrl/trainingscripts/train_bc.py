@@ -13,10 +13,11 @@ from gymnasium.spaces import Discrete, Dict, Box
 
 from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
 from schafkopfrl.policy.lstmrlmodule import LSTMRLModule
+from schafkopfrl.evaluation import TournamentEvaluation
 
 
 def main():
-    ray.init(num_cpus=4)
+    ray.init(num_cpus=4, num_gpus=1)
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
     data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "expert_data.jsonl")
@@ -55,8 +56,11 @@ def main():
             train_batch_size_per_learner=128,
             grad_clip=0.2,
         )
-        .resources(num_gpus=0)
-        .learners(num_learners=0, num_gpus_per_learner=0)
+        .learners(num_learners=0, num_gpus_per_learner=1)
+        .evaluation(
+            evaluation_interval=3,
+            custom_evaluation_function=TournamentEvaluation("default_policy", 30).rulebased_tournament_eval_fn
+        )
     )
 
     tuner = Tuner(

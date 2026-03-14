@@ -1,9 +1,10 @@
 import random
 
-import numpy as np
-
 from .public_gamestate import PublicGameState
 from .rules import Rules
+
+_NONE_CARD = Rules.NONE_CARD
+_RULES = Rules()
 
 
 class SchafkopfEnv():
@@ -13,7 +14,7 @@ class SchafkopfEnv():
         self.public_gamestate = None
         self.player_cards = [None, None, None, None]
         self.last_allowed_actions = []
-        self.rules = Rules()
+        self.rules = _RULES
 
 
     def _compile_state(self):
@@ -90,7 +91,7 @@ class SchafkopfEnv():
                     first_player_of_trick = self.public_gamestate.first_player if self.public_gamestate.trick_number == 0 else \
                     self.public_gamestate.trick_owner[self.public_gamestate.trick_number - 1]
                     card_played = trick_cards[first_player_of_trick]
-                    rufsau = [self.public_gamestate.game_type[0], 7]
+                    rufsau = (self.public_gamestate.game_type[0], 7)
                     if self.public_gamestate.game_type[0] == card_played[
                         0] and card_played != rufsau and card_played not in self.rules.get_sorted_trumps(
                             self.public_gamestate.game_type) and rufsau in self.player_cards[first_player_of_trick]:
@@ -104,6 +105,7 @@ class SchafkopfEnv():
         if self.public_gamestate.trick_number == 8:
             terminal = True
             rewards = self.get_rewards()
+            return {"game_state": self.public_gamestate, "allowed_actions": [], "current_player_cards": []}, rewards, True
 
         return self._compile_state(), rewards, terminal
 
@@ -164,7 +166,7 @@ class SchafkopfEnv():
                         trick_str_ += "*"
                     trick_str_ += ")"
 
-                    if self.public_gamestate.course_of_game_playerwise[trick][player] == [None, None]:
+                    if self.public_gamestate.course_of_game_playerwise[trick][player] == _NONE_CARD:
                         trick_str_ += "None"
                     else:
                         if self.public_gamestate.course_of_game_playerwise[trick][player] in self.rules.get_sorted_trumps(
@@ -190,9 +192,10 @@ class SchafkopfEnv():
     def get_player_team(self):
         player_team = [self.public_gamestate.game_player]
         if self.public_gamestate.game_type[1] == 0:  # Sauspiel
+            rufsau = (self.public_gamestate.game_type[0], 7)
             for trick in range(8):
                 for player_id in range(4):
-                    if self.public_gamestate.course_of_game_playerwise[trick][player_id] == [self.public_gamestate.game_type[0], 7]:
+                    if self.public_gamestate.course_of_game_playerwise[trick][player_id] == rufsau:
                         player_team.append(player_id)
         return player_team
 
@@ -202,7 +205,7 @@ class SchafkopfEnv():
 
         rewards = [0, 0, 0, 0]
 
-        if self.public_gamestate.game_type == [None, None]:
+        if self.public_gamestate.game_type == _NONE_CARD:
             return rewards
 
         player_team_points = 0
@@ -241,9 +244,9 @@ class SchafkopfEnv():
             reward += laufende * self.rules.reward_laufende
 
         # contra/retour doubles
-        if np.any(self.public_gamestate.contra):
+        if any(self.public_gamestate.contra):
             reward *= 2
-        if np.any(self.public_gamestate.retour):
+        if any(self.public_gamestate.retour):
             reward *= 2
 
         # calculate reward distribution

@@ -1,17 +1,20 @@
 # contains information about the game that is known by all players
-from copy import copy
-
 from .rules import Rules
 
-class PublicGameState:
+_NONE_CARD = Rules.NONE_CARD
 
+class PublicGameState:
+    __slots__ = ('dealer', 'first_player', 'game_stage', 'game_type', 'game_player',
+                 'trick_number', 'played_cards', 'current_player', 'bidding_round',
+                 'contra', 'retour', 'course_of_game_playerwise', 'course_of_game',
+                 'trick_owner', 'scores', 'davongelaufen', 'action_probabilities')
 
     def __init__(self, dealer):
         self.dealer = dealer
         self.first_player = (dealer + 1) % 4
 
         self.game_stage = Rules.BIDDING
-        self.game_type = [None, None]
+        self.game_type = (None, None)
         self.game_player = None
         self.trick_number = 0
         self.played_cards = 0
@@ -19,17 +22,17 @@ class PublicGameState:
         self.current_player = self.first_player
 
         # who wants to play what
-        self.bidding_round = [None for x in range(4)]
+        self.bidding_round = [None, None, None, None]
 
         # who doubled the game (kontra / retour)
-        self.contra = [None for x in range(4)]
-        self.retour = [None for x in range(4)]
+        self.contra = [None, None, None, None]
+        self.retour = [None, None, None, None]
 
         # cards ordered by players
-        self.course_of_game_playerwise = [[[None, None] for x in range(4)] for y in range(8)]
+        self.course_of_game_playerwise = [[_NONE_CARD, _NONE_CARD, _NONE_CARD, _NONE_CARD] for _ in range(8)]
 
         # cards ordered by the time they were played
-        self.course_of_game = [[[None, None] for x in range(4)] for y in range(8)]
+        self.course_of_game = [[_NONE_CARD, _NONE_CARD, _NONE_CARD, _NONE_CARD] for _ in range(8)]
 
         # which player took the trick
         self.trick_owner = [None] * 8
@@ -40,7 +43,7 @@ class PublicGameState:
         self.davongelaufen = None
 
         # for debugging purposes remember probs for picking an action
-        self.action_probabilities = [[None for x in range(4)] for y in range(11)]
+        self.action_probabilities = [[None, None, None, None] for _ in range(11)]
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -54,13 +57,13 @@ class PublicGameState:
         result.trick_number = self.trick_number
         result.played_cards = self.played_cards
         result.current_player = self.current_player
-        result.bidding_round = copy(self.bidding_round)
-        result.contra = copy(self.contra)
-        result.retour = copy(self.retour)
-        result.course_of_game_playerwise = [copy(self.course_of_game_playerwise[y]) for y in range(8)]
-        result.course_of_game = [copy(self.course_of_game[y]) for y in range(8)]
-        result.trick_owner = copy(self.trick_owner)
-        result.scores = copy(self.scores)
+        result.bidding_round = self.bidding_round[:]
+        result.contra = self.contra[:]
+        result.retour = self.retour[:]
+        result.course_of_game_playerwise = [self.course_of_game_playerwise[y][:] for y in range(8)]
+        result.course_of_game = [self.course_of_game[y][:] for y in range(8)]
+        result.trick_owner = self.trick_owner[:]
+        result.scores = self.scores[:]
         result.davongelaufen = self.davongelaufen
         result.action_probabilities = self.action_probabilities
 

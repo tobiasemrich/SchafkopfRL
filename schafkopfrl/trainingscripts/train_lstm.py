@@ -21,7 +21,7 @@ def main():
     storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ray_results")
     
 
-    ray.init(num_cpus=4)
+    ray.init(num_cpus=4, num_gpus=1)
     # register the environment
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
@@ -60,9 +60,7 @@ def main():
             grad_clip=0.2
             # entropy_coeff=0.01,
         )
-        # .resources(num_gpus=1)
-        # .learners(num_learners=1)
-        # .learners(num_learners=1, num_gpus_per_learner=1)
+        .learners(num_learners=0, num_gpus_per_learner=1)
         .evaluation(
             evaluation_interval=3,  # evaluate every N training iterations
             custom_evaluation_function=TournamentEvaluation("lstm_policy", 30).rulebased_tournament_eval_fn

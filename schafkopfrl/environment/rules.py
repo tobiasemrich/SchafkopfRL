@@ -1,24 +1,33 @@
-import numpy as np
-
 class Rules:
     """
     The Rules class contains all the rules necessary to play a game of Schafkopf. Is used by players to check for allowed games and allowed cards
   """
+    NONE_CARD = (None, None)
+
     # phases of the game
     BIDDING = 1
     CONTRA = 2
     RETOUR = 3
     TRICK = 4
 
-    #only for efficiency
-    SAUSPIEL_TRUMPS = [[1, 0], [1, 1], [1, 2], [1, 5], [1, 6], [1, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4],
-              [3, 4]]
-    SCHELLENSOLO_TRUMPS = [[0, 0], [0, 1], [0, 2], [0, 5], [0, 6], [0, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4],
-              [3, 4]]
-    HERZSOLO_TRUMPS = [[1, 0], [1, 1], [1, 2], [1, 5], [1, 6], [1, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4], [3, 4]]
-    GRASSOLOTRUMPS = [[2, 0], [2, 1], [2, 2], [2, 5], [2, 6], [2, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4], [3, 4]]
-    EICHELSOLO_TRUMPS = [[3, 0], [3, 1], [3, 2], [3, 5], [3, 6], [3, 7], [0, 3], [1, 3], [2, 3], [3, 3], [0, 4], [1, 4], [2, 4], [3, 4]]
-    WENZ_TRUMPS = [[0, 3], [1, 3], [2, 3], [3, 3]]
+    #only for efficiency — tuples for O(1) frozenset membership
+    SAUSPIEL_TRUMPS = ((1, 0), (1, 1), (1, 2), (1, 5), (1, 6), (1, 7), (0, 3), (1, 3), (2, 3), (3, 3), (0, 4), (1, 4), (2, 4),
+              (3, 4))
+    SCHELLENSOLO_TRUMPS = ((0, 0), (0, 1), (0, 2), (0, 5), (0, 6), (0, 7), (0, 3), (1, 3), (2, 3), (3, 3), (0, 4), (1, 4), (2, 4),
+              (3, 4))
+    HERZSOLO_TRUMPS = ((1, 0), (1, 1), (1, 2), (1, 5), (1, 6), (1, 7), (0, 3), (1, 3), (2, 3), (3, 3), (0, 4), (1, 4), (2, 4), (3, 4))
+    GRASSOLOTRUMPS = ((2, 0), (2, 1), (2, 2), (2, 5), (2, 6), (2, 7), (0, 3), (1, 3), (2, 3), (3, 3), (0, 4), (1, 4), (2, 4), (3, 4))
+    EICHELSOLO_TRUMPS = ((3, 0), (3, 1), (3, 2), (3, 5), (3, 6), (3, 7), (0, 3), (1, 3), (2, 3), (3, 3), (0, 4), (1, 4), (2, 4), (3, 4))
+    WENZ_TRUMPS = ((0, 3), (1, 3), (2, 3), (3, 3))
+
+    # frozensets for O(1) membership testing
+    SAUSPIEL_TRUMPS_SET = frozenset(SAUSPIEL_TRUMPS)
+    SCHELLENSOLO_TRUMPS_SET = frozenset(SCHELLENSOLO_TRUMPS)
+    HERZSOLO_TRUMPS_SET = frozenset(HERZSOLO_TRUMPS)
+    GRASSOLOTRUMPS_SET = frozenset(GRASSOLOTRUMPS)
+    EICHELSOLO_TRUMPS_SET = frozenset(EICHELSOLO_TRUMPS)
+    WENZ_TRUMPS_SET = frozenset(WENZ_TRUMPS)
+
     def __init__(self):
         self.card_number = ['siebener',
                             'achter',
@@ -34,22 +43,22 @@ class Rules:
         self.card_scores = [0, 0, 0, 2, 3, 4, 10, 11]
 
         ############## schelle # herz # gras # eichel #
-        self.cards = [[0, 0], [1, 0], [2, 0], [3, 0],  # siebener
-                      [0, 1], [1, 1], [2, 1], [3, 1],  # achter
-                      [0, 2], [1, 2], [2, 2], [3, 2],  # neuner
-                      [0, 3], [1, 3], [2, 3], [3, 3],  # unter
-                      [0, 4], [1, 4], [2, 4], [3, 4],  # ober
-                      [0, 5], [1, 5], [2, 5], [3, 5],  # koenig
-                      [0, 6], [1, 6], [2, 6], [3, 6],  # zehner
-                      [0, 7], [1, 7], [2, 7], [3, 7]]  # sau
+        self.cards = [(0, 0), (1, 0), (2, 0), (3, 0),  # siebener
+                      (0, 1), (1, 1), (2, 1), (3, 1),  # achter
+                      (0, 2), (1, 2), (2, 2), (3, 2),  # neuner
+                      (0, 3), (1, 3), (2, 3), (3, 3),  # unter
+                      (0, 4), (1, 4), (2, 4), (3, 4),  # ober
+                      (0, 5), (1, 5), (2, 5), (3, 5),  # koenig
+                      (0, 6), (1, 6), (2, 6), (3, 6),  # zehner
+                      (0, 7), (1, 7), (2, 7), (3, 7)]  # sau
 
         self.game_names = ['sauspiel', 'wenz', 'solo']
 
         ############# schelle # herz # gras # eichel #
-        self.games = [[None, None],  # no game
-                      [0, 0], [2, 0], [3, 0],  # sauspiel
-                      [None, 1],  # wenz
-                      [0, 2], [1, 2], [2, 2], [3, 2]]  # solo
+        self.games = [(None, None),  # no game
+                      (0, 0), (2, 0), (3, 0),  # sauspiel
+                      (None, 1),  # wenz
+                      (0, 2), (1, 2), (2, 2), (3, 2)]  # solo
 
         self.reward_basic = [0, 20, 50, 50]  # no game, sauspiel, solo, wenz
         self.reward_schneider = [0, 10, 20]  # normal, schneider, schneider schwarz
@@ -72,8 +81,10 @@ class Rules:
         :rtype: bool
         """
         trumps = self.get_sorted_trumps(game_type)
-        if card1 not in trumps:
-            if card2 not in trumps:
+        c1_trump = card1 in trumps
+        c2_trump = card2 in trumps
+        if not c1_trump:
+            if not c2_trump:
                 if card2[0] != card1[0] or card2[1] < card1[1]:  # not lead color or smaller value
                     return False
                 else:
@@ -81,13 +92,28 @@ class Rules:
             else:
                 return True
         else:
-            if card2 not in trumps:
+            if not c2_trump:
                 return False
             else:  # both cards are trumps
                 if trumps.index(card1) < trumps.index(card2):
                     return True
                 else:
                     return False
+
+    def get_trump_set(self, game_type):
+        if game_type[1] == 0:  # Sauspiel
+            return self.SAUSPIEL_TRUMPS_SET
+        elif game_type[1] == 2:  # Solo
+            if game_type[0] == 0:
+                return self.SCHELLENSOLO_TRUMPS_SET
+            elif game_type[0] == 1:
+                return self.HERZSOLO_TRUMPS_SET
+            elif game_type[0] == 2:
+                return self.GRASSOLOTRUMPS_SET
+            elif game_type[0] == 3:
+                return self.EICHELSOLO_TRUMPS_SET
+        else:  # wenz
+            return self.WENZ_TRUMPS_SET
 
     def get_sorted_trumps(self, game_type):
         """
@@ -144,18 +170,13 @@ class Rules:
         :return: list of allowed games
         :rtype: list
         """
-        allowed_games = self.games.copy()
-
-        playable_colors = {color for [color, number] in player_cards if
+        player_cards_set = set(player_cards)
+        playable_colors = {color for color, number in player_cards if
                            number != 3 and  # unter
                            number != 4 and  # ober
                            color != 1 and  # herz
-                           [color, 7] not in player_cards}  # not the ace
-        for c in [0, 2, 3]:
-            if c not in playable_colors:
-                allowed_games.remove([c, 0])
-
-        return allowed_games
+                           (color, 7) not in player_cards_set}  # not the ace
+        return [g for g in self.games if g[1] != 0 or g[0] in playable_colors]
 
     def allowed_cards(self, game_state, player_cards):
         """
@@ -164,8 +185,8 @@ class Rules:
         """
         allowed_cards = []
 
-        trumps = self.get_sorted_trumps(game_state.game_type)
-        rufsau = [game_state.game_type[0], 7]  # might be invalid if a solo is played
+        trump_set = self.get_trump_set(game_state.game_type)
+        rufsau = (game_state.game_type[0], 7)  # might be invalid if a solo is played
 
         first_player_of_trick = game_state.first_player if game_state.trick_number == 0 else game_state.trick_owner[
             game_state.trick_number - 1]
@@ -175,14 +196,14 @@ class Rules:
 
             if game_state.game_type[1] == 0 and rufsau in player_cards and not game_state.current_player == game_state.davongelaufen:
                 ruf_sau_color_cards = [card for card in player_cards if
-                                       (card[0] == game_state.game_type[0] and card not in trumps and card != rufsau)]
+                                       (card[0] == game_state.game_type[0] and card not in trump_set and card != rufsau)]
                 if len(ruf_sau_color_cards) < 3:
                     for c in ruf_sau_color_cards:
                         allowed_cards.remove(c)
         else:
             first_card = game_state.course_of_game_playerwise[game_state.trick_number][first_player_of_trick]
-            if first_card in trumps:
-                player_trumps = [card for card in player_cards if card in trumps]
+            if first_card in trump_set:
+                player_trumps = [card for card in player_cards if card in trump_set]
                 if len(player_trumps) > 0:
                     allowed_cards = player_trumps
                 else:
@@ -194,7 +215,7 @@ class Rules:
                     allowed_cards = [rufsau]
                 else:
                     player_first_color_cards = [card for card in player_cards if
-                                                card[0] == first_card[0] and card not in trumps]
+                                                card[0] == first_card[0] and card not in trump_set]
                     if len(player_first_color_cards) > 0:
                         allowed_cards = player_first_color_cards
                     else:
@@ -214,23 +235,23 @@ class Rules:
         """
         allowed = [False]
 
-        if not np.any(game_state.contra) and game_state.game_stage == Rules.CONTRA:  # contra check
+        if not any(game_state.contra) and game_state.game_stage == Rules.CONTRA:  # contra check
             allowed.append(True)
             # not allowed if you are the player or the team mate of the player
             if game_state.game_player == game_state.current_player or (
-                    game_state.game_type[1] == 0 and ([game_state.game_type[0], 7] in player_cards)):
+                    game_state.game_type[1] == 0 and ((game_state.game_type[0], 7) in player_cards)):
                 allowed = [False]
-        elif np.any(game_state.contra) and not np.any(game_state.retour) and game_state.game_stage == Rules.RETOUR:  # retour check
+        elif any(game_state.contra) and not any(game_state.retour) and game_state.game_stage == Rules.RETOUR:  # retour check
             allowed = [False]
             # allowed if you are the player or the team mate of the player
             if game_state.game_player == game_state.current_player or (
-                    game_state.game_type[1] == 0 and [game_state.game_type[0], 7] in player_cards):
+                    game_state.game_type[1] == 0 and (game_state.game_type[0], 7) in player_cards):
                 allowed.append(True)
 
         return allowed
 
     def highest_game(self, bidding_round, first_player):
-        current_highest_game = [None, None]
+        current_highest_game = (None, None)
         game_player = None
         for p in range(4):
             player_id = (first_player + p) % 4

@@ -24,16 +24,20 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         self.action_history = np.full((self.MAX_ACTIONS, 2), -1, dtype=np.int32)
         self.action_history_len = 0
 
-    @property
-    def action_space(self):
-        """Return action space for gymnasium compatibility."""
-        return Discrete(self.NUM_ACTIONS)
-    
-    @property
-    def observation_space(self):
-        """Return observation space for gymnasium compatibility."""
+
+    # info_vector layout (38 dims, all ego-relative):
+    #   game_stage:     11  (bidding, contra, retour, trick_0..trick_7)
+    #   game_type:       7  (two-hot: 3 type bits + 4 color bits)
+    #   game_player:     4  (one-hot, ego-relative)
+    #   contra_retour:   8  (4 contra + 4 retour, ego-relative)
+    #   first_player:    4  (one-hot, ego-relative)
+    #   current_scores:  4  (divided by 120)
+    INFO_VECTOR_SIZE = 38
+
+    def get_observation_space(self, agent_id):
         return Dict({
             "player_hand": MultiBinary(32),
+            "info_vector": Box(low=0.0, high=1.0, shape=(self.INFO_VECTOR_SIZE,), dtype=np.float32),
             "action_history": Box(
                 low=-1,
                 high=self.NUM_ACTIONS,
@@ -43,6 +47,9 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
             "action_history_len": Discrete(self.MAX_ACTIONS + 1),
             "action_mask": MultiBinary(self.NUM_ACTIONS)
         })
+
+    def get_action_space(self, agent_id):
+        return Discrete(self.NUM_ACTIONS)
     
     @property
     def num_agents(self):
@@ -102,10 +109,52 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         allowed_actions = state["allowed_actions"]
 
         observation = {}
+        ego = public_game_state.current_player
 
         ############### player hand ##################
-        # array(32) that is 1 when card is held otherwise 0
         observation["player_hand"] = one_hot_cards(player_cards).astype(np.int8)
+
+        ############### info vector (38 dims, ego-relative) ##################
+        # game_stage: 11 dims
+        game_stage = np.zeros(11, dtype=np.float32)
+        if public_game_state.game_stage == Rules.BIDDING:
+            game_stage[0] = 1
+        elif public_game_state.game_stage == Rules.CONTRA:
+            game_stage[1] = 1
+        elif public_game_state.game_stage == Rules.RETOUR:
+            game_stage[2] = 1
+        else:
+            game_stage[3 + min(public_game_state.trick_number, 7)] = 1
+
+        # game_type: 7 dims (two-hot)
+        game_type_enc = two_hot_encode_game(public_game_state.game_type).astype(np.float32)
+
+        # game_player: 4 dims (ego-relative)
+        game_player_enc = np.zeros(4, dtype=np.float32)
+        if public_game_state.game_player is not None:
+            game_player_enc[(public_game_state.game_player - ego) % 4] = 1
+
+        # contra_retour: 8 dims (ego-relative)
+        contra_retour = np.zeros(8, dtype=np.float32)
+        for p in range(4):
+            if public_game_state.contra[p]:
+                contra_retour[(p - ego) % 4] = 1
+        for p in range(4):
+            if public_game_state.retour[p]:
+                contra_retour[4 + (p - ego) % 4] = 1
+
+        # first_player: 4 dims (ego-relative)
+        first_player_enc = np.zeros(4, dtype=np.float32)
+        first_player_enc[(public_game_state.first_player - ego) % 4] = 1
+
+        # current_scores: 4 dims (ego-relative, normalized)
+        scores = np.zeros(4, dtype=np.float32)
+        for p in range(4):
+            scores[(p - ego) % 4] = public_game_state.scores[p] / 120.0
+
+        observation["info_vector"] = np.concatenate(
+            [game_stage, game_type_enc, game_player_enc, contra_retour, first_player_enc, scores]
+        )
 
         ############### action history ##################
         observation["action_history"] = self.action_history.flatten()
@@ -123,7 +172,7 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         else:
             action_mask[11:] = one_hot_cards(allowed_actions)
 
-        observation["action_mask"] = action_mask 
+        observation["action_mask"] = action_mask
 
         return observation
 

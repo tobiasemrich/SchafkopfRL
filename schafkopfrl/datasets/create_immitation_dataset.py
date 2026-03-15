@@ -37,8 +37,8 @@ def main():
             print("Read " + str(count) + " normal games")
             print(len(all_rows))
           # For testing, limit to 100 games
-          #if count >= 1000:
-          #  break
+          if count >= 1000:
+            break
           for row in final_rows:
             # Convert entire row recursively
             row_serializable = convert_to_serializable(row)
@@ -224,12 +224,14 @@ def get_states_actions(game_transcript, game_id):
       final_rows.append({
         "obs": {
           "player_hand": obs["player_hand"],
+          "info_vector": obs["info_vector"],
           "action_history": obs["action_history"],
           "action_history_len": obs["action_history_len"],
           "action_mask": obs["action_mask"],
         },
         "new_obs": {
           "player_hand": next_obs["player_hand"],
+          "info_vector": next_obs["info_vector"],
           "action_history": next_obs["action_history"],
           "action_history_len": next_obs["action_history_len"],
           "action_mask": next_obs["action_mask"],

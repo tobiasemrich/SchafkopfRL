@@ -6,6 +6,7 @@ from ray.rllib.core.rl_module.apis.value_function_api import ValueFunctionAPI
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 
 from schafkopfrl.environment.utils import *
+from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
 import torch.nn as nn
 import torch
 
@@ -33,7 +34,7 @@ class LSTMRLModule(RLModule, ValueFunctionAPI, nn.Module):
             num_layers=self.model_config.get("lstm_num_layers", 1)
         )
 
-        input_dim = 32 + self.LSTM_HIDDEN  # player_hand + encoded history
+        input_dim = 32 + SchafkopfMultiAgentEnv.INFO_VECTOR_SIZE + self.LSTM_HIDDEN  # player_hand + info_vector + encoded history
 
         # === Policy network ===
         policy_layers = []
@@ -61,13 +62,14 @@ class LSTMRLModule(RLModule, ValueFunctionAPI, nn.Module):
 
     def _get_input_tensor(self, batch):
         player_hand = batch["obs"]["player_hand"]  # shape: (B, 32)
+        info_vector = batch["obs"]["info_vector"]  # shape: (B, 38)
         action_history_flat = batch["obs"]["action_history"]  # shape: (B, 88)
         B = action_history_flat.shape[0]
         action_history = action_history_flat.reshape(B, -1, 2)  # (B, 44, 2)
         lengths = batch["obs"]["action_history_len"].reshape(-1).long()  # always (B,)
 
         history_encoded = self.history_encoder(action_history, lengths)  # (B, D)
-        x = torch.cat([player_hand, history_encoded], dim=-1)  # (B, 32 + H)
+        x = torch.cat([player_hand, info_vector, history_encoded], dim=-1)  # (B, 32 + 38 + H)
         return x
 
     @override(RLModule)

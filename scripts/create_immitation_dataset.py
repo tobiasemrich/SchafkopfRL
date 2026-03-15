@@ -25,7 +25,7 @@ def main():
   with open('data/normal_games.json', 'r') as file:
     games = json.load(file)
 
-    with open('data/expert_data.jsonl', 'w') as f:
+    with open('data/expert_data_small.jsonl', 'w') as f:
 
       for game_id, g in enumerate(games):
         game = g # GameTranscript.from_dict(g)

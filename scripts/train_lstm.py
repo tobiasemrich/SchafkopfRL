@@ -18,7 +18,7 @@ from schafkopfrl.evaluation import TournamentEvaluation
 
 def main():
 
-    storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ray_results")
+    storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
     
 
     ray.init(num_cpus=14, num_gpus=1)

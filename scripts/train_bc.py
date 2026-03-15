@@ -20,8 +20,8 @@ def main():
     ray.init(num_cpus=4, num_gpus=1)
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
-    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "expert_data.jsonl")
-    storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ray_results")
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "expert_data.jsonl")
+    storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
 
     config = (
         BCConfig()

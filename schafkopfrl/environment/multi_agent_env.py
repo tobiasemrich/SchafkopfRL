@@ -24,8 +24,14 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         self.action_history = np.full((self.MAX_ACTIONS, 2), -1, dtype=np.int32)
         self.action_history_len = 0
 
-
-    def get_observation_space(self, agent_id):
+    @property
+    def action_space(self):
+        """Return action space for gymnasium compatibility."""
+        return Discrete(self.NUM_ACTIONS)
+    
+    @property
+    def observation_space(self):
+        """Return observation space for gymnasium compatibility."""
         return Dict({
             "player_hand": MultiBinary(32),
             "action_history": Box(
@@ -37,9 +43,6 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
             "action_history_len": Discrete(self.MAX_ACTIONS + 1),
             "action_mask": MultiBinary(self.NUM_ACTIONS)
         })
-
-    def get_action_space(self, agent_id):
-        return Discrete(self.NUM_ACTIONS)
     
     @property
     def num_agents(self):

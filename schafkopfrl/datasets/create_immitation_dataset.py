@@ -37,8 +37,8 @@ def main():
             print("Read " + str(count) + " normal games")
             print(len(all_rows))
           # For testing, limit to 100 games
-          if count >= 1000:
-            break
+          #if count >= 1000:
+          #  break
           for row in final_rows:
             # Convert entire row recursively
             row_serializable = convert_to_serializable(row)

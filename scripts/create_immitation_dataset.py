@@ -14,14 +14,16 @@ import numpy as np
 from schafkopfrl.environment.rules import Rules
 import json
 import pandas as pd
+from typing import Any
 
-rules = Rules()
+rules: Rules = Rules()
 
 
-def main():
-  all_rows = []
+def main() -> None:
+  """Parse game transcripts and write expert data to JSONL for BC training."""
+  all_rows: list[dict[str, Any]] = []
   # load and preprocess database
-  count = 0
+  count: int = 0
   with open('data/normal_games.json', 'r') as file:
     games = json.load(file)
 
@@ -31,7 +33,7 @@ def main():
         game = g # GameTranscript.from_dict(g)
         if len(game["sonderregeln"]) == 0:
           count += 1
-          final_rows = get_states_actions(game, game_id=game_id)
+          final_rows: list[dict[str, Any]] = get_states_actions(game, game_id=game_id)
           all_rows += final_rows
           if count % 1000 == 0:
             print("Read " + str(count) + " normal games")
@@ -41,7 +43,7 @@ def main():
             break
           for row in final_rows:
             # Convert entire row recursively
-            row_serializable = convert_to_serializable(row)
+            row_serializable: Any = convert_to_serializable(row)
             json.dump(row_serializable, f)
             f.write('\n')
       #df = pd.DataFrame(all_rows)
@@ -51,8 +53,22 @@ def main():
   print(f"Saved {len(all_rows)} rows to expert_data.jsonl")
 
 
-def get_states_actions(game_transcript, game_id):
-  env = SchafkopfMultiAgentEnv()
+def get_states_actions(game_transcript: dict[str, Any], game_id: int) -> list[dict[str, Any]]:
+  """Replay a game transcript through the environment and collect transitions.
+
+  Parameters
+  ----------
+  game_transcript : dict[str, Any]
+      Raw game transcript with player hands, bidding, and course of game.
+  game_id : int
+      Unique identifier for this game episode.
+
+  Returns
+  -------
+  list[dict[str, Any]]
+      List of ``(obs, new_obs, actions, rewards, ...)`` dicts per agent step.
+  """
+  env: SchafkopfMultiAgentEnv = SchafkopfMultiAgentEnv()
 
   # initialize with fixed cards from transcript
   obs_dict, _ = env.reset_with_fixed_cards([game_transcript["player_hands"][str(i)] for i in range(4)])
@@ -60,15 +76,15 @@ def get_states_actions(game_transcript, game_id):
   current_agent_id, current_obs = deepcopy(next(iter(obs_dict.items())))
   
   # store simple (obs, action, reward, agent_id) tuples during stepping
-  step_sequence = []
-  final_rewards = {'player_0':0, 'player_1':0, 'player_2':0, 'player_3':0}
+  step_sequence: list[tuple[dict, int, float, str]] = []
+  final_rewards: dict[str, float] = {'player_0':0, 'player_1':0, 'player_2':0, 'player_3':0}
   # ------------------ BIDDING STAGE ------------------
-  game_player = None
-  game_type = None
+  game_player: int | None = None
+  game_type: list[int | None] | None = None
 
   # Determine who bid and which game type (if any)
   if len(game_transcript["bidding_round"]) != 4:  # not all said weiter
-    player_bidding = None
+    player_bidding: str | None = None
     for i in range(1, 5):
       if "Vortritt" not in game_transcript["bidding_round"][-i]:
         player_bidding = game_transcript["bidding_round"][-i]
@@ -100,19 +116,19 @@ def get_states_actions(game_transcript, game_id):
 
   # four bidding actions (weiter or selected game)
   for i in range(4):
-    action = [None, None]
+    action: list[int | None] = [None, None]
     if game_player is not None and i == game_player:
       action = game_type
 
-    action_idx = int(preprocess_action(Rules.BIDDING, action).item())
+    action_idx: int = int(preprocess_action(Rules.BIDDING, action).item())
 
-    agent_id = current_agent_id
-    obs = current_obs
+    agent_id: str = current_agent_id
+    obs: dict = current_obs
 
     next_obs_dict, rewards, terminateds, truncateds, _ = env.step({agent_id: action_idx})
 
     # reward is only non-zero at terminal
-    reward_value = rewards.get(agent_id, 0.0)
+    reward_value: float = rewards.get(agent_id, 0.0)
     if not terminateds.get("__all__", False):
       reward_value = 0.0
 
@@ -127,7 +143,7 @@ def get_states_actions(game_transcript, game_id):
 
   # ------------------ CONTRA / RETOUR ------------------
   if len(game_transcript["bidding_round"]) != 4:  # only if a game was announced
-    con_ret = [game_transcript["player_dict"][p] for p in game_transcript["kontra"]]
+    con_ret: list[int] = [game_transcript["player_dict"][p] for p in game_transcript["kontra"]]
 
     # CONTRA stage (4 decisions)
     for i in range(4):
@@ -201,25 +217,25 @@ def get_states_actions(game_transcript, game_id):
         current_agent_id, current_obs = deepcopy(next(iter(next_obs_dict.items())))
 
   # finished full transcript; build rows from step_sequence
-  rows_by_agent = {agent: [] for agent in env.agents}
+  rows_by_agent: dict[str, list[tuple[dict, int, float]]] = {agent: [] for agent in env.agents}
   
   # group steps by agent
   for obs, action, reward, agent_id in step_sequence:
     rows_by_agent[agent_id].append((obs, action, reward))
   
   # build final rows with next_obs and terminateds/truncateds
-  final_rows = []
+  final_rows: list[dict[str, Any]] = []
   for agent in env.agents:
-    agent_steps = rows_by_agent[agent]
+    agent_steps: list[tuple[dict, int, float]] = rows_by_agent[agent]
     for i, (obs, action, reward) in enumerate(agent_steps):
       # next_obs is the next obs for the same agent, or a copy of current obs for the last step
-      next_obs = agent_steps[i + 1][0] if i < len(agent_steps) - 1 else obs
+      next_obs: dict = agent_steps[i + 1][0] if i < len(agent_steps) - 1 else obs
       
       # terminateds is True only for the last step of this agent's sequence
-      is_last_step = (i == len(agent_steps) - 1)
+      is_last_step: bool = (i == len(agent_steps) - 1)
       
       # Use final_rewards for last step, otherwise use stored reward (or 0 for trick stage)
-      step_reward = final_rewards.get(agent, 0.0) if is_last_step else reward
+      step_reward: float = final_rewards.get(agent, 0.0) if is_last_step else reward
       
       final_rows.append({
         "obs": {
@@ -246,8 +262,19 @@ def get_states_actions(game_transcript, game_id):
   
   return final_rows
 
-def convert_to_serializable(obj):
-  """Recursively convert non-serializable objects (numpy arrays, torch tensors) to JSON-serializable formats."""
+def convert_to_serializable(obj: Any) -> Any:
+  """Recursively convert numpy arrays and torch tensors to JSON-serializable types.
+
+  Parameters
+  ----------
+  obj : Any
+      Object to convert.
+
+  Returns
+  -------
+  Any
+      JSON-serializable representation.
+  """
   if isinstance(obj, dict):
     return {key: convert_to_serializable(value) for key, value in obj.items()}
   elif isinstance(obj, (list, tuple)):
@@ -264,8 +291,22 @@ def convert_to_serializable(obj):
     return str(obj)
 
 
-def preprocess_action(stage, action):
-  index = None
+def preprocess_action(stage: int, action: Any) -> torch.Tensor:
+  """Convert a game action to its discrete index tensor.
+
+  Parameters
+  ----------
+  stage : int
+      Current game stage (``Rules.BIDDING``, ``Rules.CONTRA``, etc.).
+  action : Any
+      The action (game type, bool, or card).
+
+  Returns
+  -------
+  torch.Tensor
+      Scalar long tensor with the action index.
+  """
+  index: int | None = None
   if stage == Rules.BIDDING:
     index = rules.games.index(action)
   elif stage == Rules.CONTRA or stage == Rules.RETOUR:
@@ -275,7 +316,7 @@ def preprocess_action(stage, action):
       index = 9
   else:  # trick stage
     index = 11 + rules.cards.index(action)
-  action_representation = np.zeros(43)
+  action_representation: np.ndarray = np.zeros(43)
   action_representation[index] = 1
   #return torch.tensor(action_representation).float()
   return torch.tensor(index, dtype=torch.long)

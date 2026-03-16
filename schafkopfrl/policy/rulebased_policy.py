@@ -1,38 +1,59 @@
+from typing import Any
+
 import random
 from ray.rllib.core import Columns
 from ray.rllib.core.rl_module.rl_module import RLModule
 from ray.rllib.utils.typing import ModuleID
 from ray.rllib.utils.annotations import override
-from schafkopfrl.environment.rules import Rules 
+from schafkopfrl.environment.rules import Rules, Card, GameType
+from schafkopfrl.environment.public_gamestate import PublicGameState
 import numpy as np
 from torch import nn
 
 
 class RuleBasedRLModule(RLModule):
-    def __init__(self, **kwargs):
+    """Heuristic rule-based policy for Schafkopf.
+
+    Implements simple hand-crafted rules for bidding, contra/retour, and
+    card selection. Useful as a baseline opponent for evaluation.
+    """
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.rules = Rules()
+        self.rules: Rules = Rules()
 
     @override(RLModule)
-    def _forward(self, batch, **kwargs):
+    def _forward(self, batch: dict[str, Any], **kwargs: Any) -> int:
         return self.rule_based_action(batch)
 
 
-    def rule_based_action(self, state) -> int:
+    def rule_based_action(self, state: dict[str, Any]) -> int:
+        """Select an action index using hand-crafted heuristics.
+
+        Parameters
+        ----------
+        state : dict[str, Any]
+            Raw game state with ``allowed_actions``, ``game_state``,
+            and ``current_player_cards``.
+
+        Returns
+        -------
+        int
+            Discrete action index (0–42).
+        """
         allowed_actions, gamestate, player_cards = (
             state["allowed_actions"],
             state["game_state"],
             state["current_player_cards"],
         )
-        index = -1
+        index: int = -1
         if gamestate.game_stage == Rules.BIDDING:
-            game_type = self.call_game_type(player_cards, allowed_actions)
+            game_type: GameType = self.call_game_type(player_cards, allowed_actions)
             index =  self.rules.games.index(game_type)
 
         elif (
             gamestate.game_stage == Rules.CONTRA or gamestate.game_stage == Rules.RETOUR
         ):
-            contra_retour = self.contra_retour(player_cards, allowed_actions)
+            contra_retour: bool = self.contra_retour(player_cards, allowed_actions)
             index = 9 + int(contra_retour)
         else:
             card = self.select_card(gamestate, player_cards, allowed_actions)
@@ -40,23 +61,30 @@ class RuleBasedRLModule(RLModule):
         
         return index
 
-    def call_game_type(self, player_cards, allowed_games):
-        """
-        Calls a game according to the following rules:
-        - if in some solo more then 7 trumps then play the solo
-        - if at least 2 unter and for all colors in hand the ace is also in hand then play wenz
-        - if 4 or more trumps then play a sauspiel on the color with the fewest other cards of that color
-        - otherwise weiter
+    def call_game_type(self, player_cards: list[Card], allowed_games: list[GameType]) -> GameType:
+        """Decide which game to bid based on simple trump-count heuristics.
 
-        :param game_state: the current game state
-        :type game_state: game_state
-        :return: the game to play
-        :rtype: list
+        - Solo if 7+ trumps in that solo's trump set.
+        - Wenz if 2+ Unter and few non-ace side cards.
+        - Sauspiel if 4+ trumps, choosing the color with fewest side cards.
+        - Otherwise pass (weiter).
+
+        Parameters
+        ----------
+        player_cards : list[Card]
+            The player's hand.
+        allowed_games : list[GameType]
+            Games the player is allowed to bid.
+
+        Returns
+        -------
+        GameType
+            The chosen game type to bid.
         """
 
         # solo heuristic
         for solo in [(0, 2), (1, 2), (2, 2), (3, 2)]:
-            trump_count = 0
+            trump_count: int = 0
             for card in self.rules.get_sorted_trumps(solo):
                 if card in player_cards:
                     trump_count += 1
@@ -64,10 +92,10 @@ class RuleBasedRLModule(RLModule):
                 return solo
 
         # wenz heurisitc
-        wenz_count = len(
+        wenz_count: int = len(
             [card for card in [(0, 3), (1, 3), (2, 3), (3, 3)] if card in player_cards]
         )
-        spazen_count = 0
+        spazen_count: int = 0
         if wenz_count >= 2:
             for color in range(4):
                 if (color, 7) in player_cards:
@@ -81,19 +109,19 @@ class RuleBasedRLModule(RLModule):
                 return (None, 1)
 
         # sauspiel heuristic
-        trumps = [
+        trumps: list[Card] = [
             card
             for card in self.rules.get_sorted_trumps((0, 0))
             if card in player_cards
         ]
         if len(trumps) >= 4:
-            non_trump_cards = [card for card in player_cards if card not in trumps]
-            allowed_saupiele = [
+            non_trump_cards: list[Card] = [card for card in player_cards if card not in trumps]
+            allowed_saupiele: list[GameType] = [
                 game for game in allowed_games if game in [(0, 0), (2, 0), (3, 0)]
             ]
 
-            best_color = -1
-            best_color_count = 10
+            best_color: int = -1
+            best_color_count: int = 10
             if len(allowed_saupiele) > 0:
                 for (color, _) in allowed_saupiele:
                     color_count = len([(color, _) for (color, _) in non_trump_cards])
@@ -103,8 +131,24 @@ class RuleBasedRLModule(RLModule):
 
         return (None, None)
 
-    def contra_retour(self, player_cards, allowed_double):
-        trumps = [
+    def contra_retour(self, player_cards: list[Card], allowed_double: list[bool]) -> bool:
+        """Decide whether to double (contra/retour).
+
+        Doubles if the player holds 6 or more trumps.
+
+        Parameters
+        ----------
+        player_cards : list[Card]
+            The player's hand.
+        allowed_double : list[bool]
+            Whether doubling is allowed.
+
+        Returns
+        -------
+        bool
+            True if the player chooses to double.
+        """
+        trumps: list[Card] = [
             card
             for card in self.rules.get_sorted_trumps([0, 0])
             if card in player_cards
@@ -114,9 +158,28 @@ class RuleBasedRLModule(RLModule):
         else:
             return False
 
-    def select_card(self, game_state, player_cards, allowed_cards):
+    def select_card(self, game_state: PublicGameState, player_cards: list[Card], allowed_cards: list[Card]) -> Card:
+        """Select a card to play using heuristic rules.
 
-        selected_card = random.choice(allowed_cards)
+        Applies game-type-specific heuristics for Sauspiel, Solo, and Wenz
+        based on trump holding, position in trick, and played colors.
+
+        Parameters
+        ----------
+        game_state : PublicGameState
+            The current public game state.
+        player_cards : list[Card]
+            The player's full hand.
+        allowed_cards : list[Card]
+            Cards the player is allowed to play.
+
+        Returns
+        -------
+        Card
+            The selected card to play.
+        """
+
+        selected_card: Card = random.choice(allowed_cards)
 
         # precompute some interesting features
         if game_state.game_stage == Rules.TRICK and len(player_cards) == 8:
@@ -128,17 +191,17 @@ class RuleBasedRLModule(RLModule):
             else:
                 self.spieler_or_mitspieler = False
 
-        played_cards_in_trick = game_state.played_cards % 4
-        trump_cards = [
+        played_cards_in_trick: int = game_state.played_cards % 4
+        trump_cards: list[Card] = [
             trump
             for trump in self.rules.get_sorted_trumps(game_state.game_type)
             if trump in allowed_cards
         ]
-        color_aces = [
+        color_aces: list[Card] = [
             ace for ace in allowed_cards if ace in [(0, 7), (1, 7), (2, 7), (3, 7)]
         ]
         # played colors does not include current trick
-        played_colors = {
+        played_colors: set[int] = {
             c
             for (c, n) in [
                 trick[0]
@@ -147,7 +210,7 @@ class RuleBasedRLModule(RLModule):
             ]
             if n not in [3, 4]
         }
-        first_card_in_trick = game_state.course_of_game[game_state.trick_number][0]
+        first_card_in_trick: Card = game_state.course_of_game[game_state.trick_number][0]
 
         if game_state.game_type in [(0, 0), (2, 0), (3, 0)]:  # Sauspiel
             if (1, 7) in color_aces:

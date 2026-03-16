@@ -16,14 +16,15 @@ from schafkopfrl.policy.lstmrlmodule import LSTMRLModule
 from schafkopfrl.evaluation import TournamentEvaluation
 
 
-def main():
+def main() -> None:
+    """Configure and launch Behavioral Cloning training from expert data."""
     ray.init(num_cpus=4, num_gpus=1)
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
-    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "expert_data.jsonl")
-    storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
+    data_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "expert_data.jsonl")
+    storage_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
 
-    config = (
+    config: BCConfig = (
         BCConfig()
         .environment(
             "SchafkopfMultiAgentEnv",
@@ -63,7 +64,7 @@ def main():
         )
     )
 
-    tuner = Tuner(
+    tuner: Tuner = Tuner(
         "BC",
         param_space=config.to_dict(),
         run_config=RunConfig(

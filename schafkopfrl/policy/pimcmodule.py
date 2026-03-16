@@ -1,3 +1,5 @@
+from typing import Any
+
 from ray.rllib.core import Columns
 from ray.rllib.core.rl_module.rl_module import RLModule
 from ray.rllib.utils.annotations import override
@@ -5,7 +7,7 @@ from ray.rllib.models.torch.torch_distributions import TorchCategorical
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 
 from schafkopfrl.environment.utils import *
-from schafkopfrl.environment.rules import Rules
+from schafkopfrl.environment.rules import Rules, Card
 from schafkopfrl.environment.schafkopf_env import SchafkopfEnv
 from schafkopfrl.environment.public_gamestate import PublicGameState
 import torch.nn as nn
@@ -14,18 +16,31 @@ import random
 
 from schafkopfrl.policy.mcts.mct import MonteCarloTree
 
-_NONE_CARD = Rules.NONE_CARD
+_NONE_CARD: Card = Rules.NONE_CARD
 
-class MCTSRLModule(RLModule):
+class PIMCModule(RLModule):
+    """Perfect Information Monte Carlo (PIMC) policy for Schafkopf.
 
-    def __init__(self, samples, playouts):
+    Samples possible opponent hand distributions and runs UCT (Monte Carlo
+    Tree Search) rollouts on each sample, then aggregates results to select
+    the best action.
+
+    Parameters
+    ----------
+    samples : int
+        Number of hand samples per decision.
+    playouts : int
+        Number of UCT playouts per sample.
+    """
+
+    def __init__(self, samples: int, playouts: int) -> None:
         super().__init__()
-        self.samples = samples
-        self.playouts = playouts
-        self.rules = Rules()
+        self.samples: int = samples
+        self.playouts: int = playouts
+        self.rules: Rules = Rules()
 
     @override(RLModule)
-    def _forward(self, batch, **kwargs):
+    def _forward(self, batch: dict[str, Any], **kwargs: Any) -> int:
         allowed_actions, gamestate, player_cards = (
             batch["allowed_actions"],
             batch["game_state"],
@@ -33,7 +48,7 @@ class MCTSRLModule(RLModule):
         )
         action, _ = self.run_mcts(gamestate, player_cards)
 
-        index = -1
+        index: int = -1
         if gamestate.game_stage == Rules.BIDDING:
             index =  self.rules.games.index(action)
 
@@ -46,22 +61,55 @@ class MCTSRLModule(RLModule):
         
         return index
 
-    def _run_single_mcts(self, game_state, player_cards, rules, playouts):
+    def _run_single_mcts(self, game_state: PublicGameState, player_cards: list[Card], rules: Rules, playouts: int) -> dict:
+        """Run a single MCTS rollout with one sampled hand configuration.
+
+        Parameters
+        ----------
+        game_state : PublicGameState
+            Current public game state.
+        player_cards : list[Card]
+            The ego player's hand.
+        rules : Rules
+            Rules instance for action validation.
+        playouts : int
+            Number of playouts for this MCTS run.
+
+        Returns
+        -------
+        dict
+            Mapping from action to ``(visit_count, cumulative_rewards)``.
+        """
         # Copy game_state if mutable to avoid cross-process contamination
-        sampled_player_hands = self.sample_player_hands(game_state, player_cards)
+        sampled_player_hands: list[list[Card]] = self.sample_player_hands(game_state, player_cards)
         mct = MonteCarloTree(game_state, sampled_player_hands, rules.allowed_actions(game_state, player_cards))
         mct.uct_search(playouts)
         return mct.get_action_count_rewards()
 
-    def run_mcts(self, game_state, player_cards):
+    def run_mcts(self, game_state: PublicGameState, player_cards: list[Card]) -> tuple[Any, float]:
+        """Run PIMC search by aggregating multiple MCTS samples.
 
-        cummulative_action_count_rewards = {}
+        Parameters
+        ----------
+        game_state : PublicGameState
+            Current public game state.
+        player_cards : list[Card]
+            The ego player's hand.
+
+        Returns
+        -------
+        tuple[Any, float]
+            ``(best_action, confidence)`` where confidence is the fraction
+            of visits going to the best action.
+        """
+
+        cummulative_action_count_rewards: dict = {}
 
         for i in range (self.samples):
-            sampled_player_hands = self.sample_player_hands(game_state, player_cards)
-            mct = MonteCarloTree(game_state,sampled_player_hands, self.rules.allowed_actions(game_state, player_cards))
+            sampled_player_hands: list[list[Card]] = self.sample_player_hands(game_state, player_cards)
+            mct: MonteCarloTree = MonteCarloTree(game_state,sampled_player_hands, self.rules.allowed_actions(game_state, player_cards))
             mct.uct_search(self.playouts)
-            action_count_rewards = mct.get_action_count_rewards()
+            action_count_rewards: dict = mct.get_action_count_rewards()
 
             for action in action_count_rewards:
                 if action in cummulative_action_count_rewards:
@@ -70,22 +118,40 @@ class MCTSRLModule(RLModule):
                 else:
                     cummulative_action_count_rewards[action] = action_count_rewards[action]
 
-        best_action = max(cummulative_action_count_rewards.items(), key=lambda x : x[1][0])[0]
-        visits = cummulative_action_count_rewards[best_action][0]
+        best_action: Any = max(cummulative_action_count_rewards.items(), key=lambda x : x[1][0])[0]
+        visits: int = cummulative_action_count_rewards[best_action][0]
         return best_action, visits / sum([x[0] for x in cummulative_action_count_rewards.values()])
 
-    def sample_player_hands(self, game_state, ego_player_hand):
+    def sample_player_hands(self, game_state: PublicGameState, ego_player_hand: list[Card]) -> list[list[Card]]:
+        """Sample a valid card distribution for all players.
+
+        Randomly distributes unseen cards among opponents and validates
+        that the resulting distribution is consistent with the observed
+        game history.
+
+        Parameters
+        ----------
+        game_state : PublicGameState
+            Current public game state.
+        ego_player_hand : list[Card]
+            The ego player's known hand.
+
+        Returns
+        -------
+        list[list[Card]]
+            Four player hands consistent with the game history.
+        """
 
         # precomputations
-        played_cards_set = set()
+        played_cards_set: set[Card] = set()
         for trick in game_state.course_of_game:
             for card in trick:
                 if card != _NONE_CARD:
                     played_cards_set.add(card)
-        ego_set = set(ego_player_hand)
-        remaining_cards = [card for card in self.rules.cards if card not in played_cards_set and card not in ego_set]
+        ego_set: set[Card] = set(ego_player_hand)
+        remaining_cards: list[Card] = [card for card in self.rules.cards if card not in played_cards_set and card not in ego_set]
 
-        needed_player_cards = [8, 8, 8, 8]
+        needed_player_cards: list[int] = [8, 8, 8, 8]
 
         for trick in range(game_state.trick_number + 1):
             for i, card in enumerate(game_state.course_of_game_playerwise[trick]):
@@ -94,8 +160,8 @@ class MCTSRLModule(RLModule):
 
         needed_player_cards[game_state.current_player] = 0
 
-        valid_card_distribution = False
-        player_cards = None
+        valid_card_distribution: bool = False
+        player_cards: list[list[Card]] | None = None
 
         # loop over random card distributions until we found a valid one
         while not valid_card_distribution:
@@ -106,7 +172,7 @@ class MCTSRLModule(RLModule):
             player_cards[game_state.current_player] = ego_player_hand
             random.shuffle(remaining_cards)
 
-            from_card = 0
+            from_card: int = 0
             for i, nededed_cards in enumerate(needed_player_cards):
                 if i == game_state.current_player:
                     continue
@@ -114,7 +180,7 @@ class MCTSRLModule(RLModule):
                 from_card += nededed_cards
 
             # check if with the current card distribution every made move was valid
-            schafkopf_env = SchafkopfEnv()
+            schafkopf_env: SchafkopfEnv = SchafkopfEnv()
             state, _, _ = schafkopf_env.set_state(PublicGameState(game_state.dealer), player_cards)
 
             while True:

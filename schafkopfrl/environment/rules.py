@@ -1,14 +1,25 @@
+from typing import Optional, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .public_gamestate import PublicGameState
+
+Card = tuple[Optional[int], Optional[int]]
+GameType = tuple[Optional[int], Optional[int]]
+
 class Rules:
+    """Rules engine for the Bavarian card game Schafkopf.
+
+    Contains all game rules including trump ordering, allowed actions
+    (bidding, contra/retour, card play), trick evaluation, and scoring.
+    Used by environments and policies to validate and evaluate game actions.
     """
-    The Rules class contains all the rules necessary to play a game of Schafkopf. Is used by players to check for allowed games and allowed cards
-  """
-    NONE_CARD = (None, None)
+    NONE_CARD: Card = (None, None)
 
     # phases of the game
-    BIDDING = 1
-    CONTRA = 2
-    RETOUR = 3
-    TRICK = 4
+    BIDDING: int = 1
+    CONTRA: int = 2
+    RETOUR: int = 3
+    TRICK: int = 4
 
     #only for efficiency — tuples for O(1) frozenset membership
     SAUSPIEL_TRUMPS = ((1, 0), (1, 1), (1, 2), (1, 5), (1, 6), (1, 7), (0, 3), (1, 3), (2, 3), (3, 3), (0, 4), (1, 4), (2, 4),
@@ -28,8 +39,8 @@ class Rules:
     EICHELSOLO_TRUMPS_SET = frozenset(EICHELSOLO_TRUMPS)
     WENZ_TRUMPS_SET = frozenset(WENZ_TRUMPS)
 
-    def __init__(self):
-        self.card_number = ['siebener',
+    def __init__(self) -> None:
+        self.card_number: list[str] = ['siebener',
                             'achter',
                             'neuner',
                             'unter',
@@ -38,12 +49,12 @@ class Rules:
                             'zehner',
                             'sau']
 
-        self.card_color = ['schellen', 'herz', 'gras', 'eichel']
+        self.card_color: list[str] = ['schellen', 'herz', 'gras', 'eichel']
 
-        self.card_scores = [0, 0, 0, 2, 3, 4, 10, 11]
+        self.card_scores: list[int] = [0, 0, 0, 2, 3, 4, 10, 11]
 
         ############## schelle # herz # gras # eichel #
-        self.cards = [(0, 0), (1, 0), (2, 0), (3, 0),  # siebener
+        self.cards: list[tuple[int, int]] = [(0, 0), (1, 0), (2, 0), (3, 0),  # siebener
                       (0, 1), (1, 1), (2, 1), (3, 1),  # achter
                       (0, 2), (1, 2), (2, 2), (3, 2),  # neuner
                       (0, 3), (1, 3), (2, 3), (3, 3),  # unter
@@ -52,37 +63,43 @@ class Rules:
                       (0, 6), (1, 6), (2, 6), (3, 6),  # zehner
                       (0, 7), (1, 7), (2, 7), (3, 7)]  # sau
 
-        self.game_names = ['sauspiel', 'wenz', 'solo']
+        self.game_names: list[str] = ['sauspiel', 'wenz', 'solo']
 
         ############# schelle # herz # gras # eichel #
-        self.games = [(None, None),  # no game
+        self.games: list[GameType] = [(None, None),  # no game
                       (0, 0), (2, 0), (3, 0),  # sauspiel
                       (None, 1),  # wenz
                       (0, 2), (1, 2), (2, 2), (3, 2)]  # solo
 
-        self.reward_basic = [0, 20, 50, 50]  # no game, sauspiel, solo, wenz
-        self.reward_schneider = [0, 10, 20]  # normal, schneider, schneider schwarz
-        self.winning_thresholds = [0, 30, 60, 90, 119]
+        self.reward_basic: list[int] = [0, 20, 50, 50]  # no game, sauspiel, solo, wenz
+        self.reward_schneider: list[int] = [0, 10, 20]  # normal, schneider, schneider schwarz
+        self.winning_thresholds: list[int] = [0, 30, 60, 90, 119]
 
-        self.reward_laufende = 10
-        self.min_laufende = [3, 2, 3]  # sauspiel, wenz, solo
+        self.reward_laufende: int = 10
+        self.min_laufende: list[int] = [3, 2, 3]  # sauspiel, wenz, solo
 
-    def higher_card(self, game_type, card1, card2):
+    def higher_card(self, game_type: GameType, card1: Card, card2: Card) -> bool:
+        """Check whether card2 beats card1 in the same trick.
+
+        Assumes card1 was played before card2 in the same trick.
+
+        Parameters
+        ----------
+        game_type : GameType
+            The current game type being played.
+        card1 : Card
+            The first played card.
+        card2 : Card
+            The second played card.
+
+        Returns
+        -------
+        bool
+            True if card2 is higher than card1, False otherwise.
         """
-        returns true if card2 is higher than card1 (given the game_type) assuming card1 gets played before card2 in the same trick
-
-        :param game_type: the game_type of the game
-        :type game_type: list
-        :param card1: the first played card
-        :type card1: list
-        :param card2: the second played card
-        :type card2: list
-        :return: true if card2 is higher than card1, otherwise false
-        :rtype: bool
-        """
-        trumps = self.get_sorted_trumps(game_type)
-        c1_trump = card1 in trumps
-        c2_trump = card2 in trumps
+        trumps: tuple[Card, ...] = self.get_sorted_trumps(game_type)
+        c1_trump: bool = card1 in trumps
+        c2_trump: bool = card2 in trumps
         if not c1_trump:
             if not c2_trump:
                 if card2[0] != card1[0] or card2[1] < card1[1]:  # not lead color or smaller value
@@ -100,7 +117,19 @@ class Rules:
                 else:
                     return False
 
-    def get_trump_set(self, game_type):
+    def get_trump_set(self, game_type: GameType) -> frozenset[Card]:
+        """Return the frozenset of trump cards for the given game type.
+
+        Parameters
+        ----------
+        game_type : GameType
+            The current game type.
+
+        Returns
+        -------
+        frozenset[Card]
+            Set of trump cards for O(1) membership testing.
+        """
         if game_type[1] == 0:  # Sauspiel
             return self.SAUSPIEL_TRUMPS_SET
         elif game_type[1] == 2:  # Solo
@@ -115,13 +144,18 @@ class Rules:
         else:  # wenz
             return self.WENZ_TRUMPS_SET
 
-    def get_sorted_trumps(self, game_type):
-        """
-        returns sorted list of trumps ascending depending on the played game_type
-        :param game_type: the played game_type
-        :type game_type: list
-        :return: sorted (ascending) list of trump cards
-        :rtype: list
+    def get_sorted_trumps(self, game_type: GameType) -> tuple[Card, ...]:
+        """Return trump cards sorted in ascending order of strength.
+
+        Parameters
+        ----------
+        game_type : GameType
+            The current game type.
+
+        Returns
+        -------
+        tuple[Card, ...]
+            Trump cards ordered from weakest to strongest.
         """
         if game_type[1] == 0:  # Sauspiel
             #trump_colors = [1]  # Herz
@@ -150,7 +184,23 @@ class Rules:
         #return trumps_color + trumps_number
 
 
-    def allowed_actions(self, game_state, player_cards):
+    def allowed_actions(self, game_state: "PublicGameState", player_cards: list[Card]) -> list:
+        """Return the list of allowed actions for the current player.
+
+        Dispatches to the appropriate method based on the current game stage.
+
+        Parameters
+        ----------
+        game_state : PublicGameState
+            The current public game state.
+        player_cards : list[Card]
+            The current player's hand.
+
+        Returns
+        -------
+        list
+            Allowed actions (games, booleans, or cards depending on stage).
+        """
         if game_state.game_stage == Rules.BIDDING:
             return self.allowed_games(player_cards)
         elif game_state.game_stage == Rules.CONTRA or game_state.game_stage == Rules.RETOUR:
@@ -159,34 +209,52 @@ class Rules:
             return self.allowed_cards(game_state, player_cards)
 
 
-    def allowed_games(self, player_cards):
-        """
-        returns a list of allowed games, given the player hand. Generally, all games are allowed except
-          - Sauspiel with color that player does not have
-          - Sauspiel with color that player has the ace
+    def allowed_games(self, player_cards: list[Card]) -> list[GameType]:
+        """Return the list of games a player is allowed to bid.
 
-        :param player_cards: list of player cards
-        :type player_cards: list
-        :return: list of allowed games
-        :rtype: list
+        All games are allowed except Sauspiel with a color the player
+        does not hold or already holds the ace of.
+
+        Parameters
+        ----------
+        player_cards : list[Card]
+            The player's hand.
+
+        Returns
+        -------
+        list[GameType]
+            Allowed game types the player may bid.
         """
-        player_cards_set = set(player_cards)
-        playable_colors = {color for color, number in player_cards if
+        player_cards_set: set[Card] = set(player_cards)
+        playable_colors: set[int] = {color for color, number in player_cards if
                            number != 3 and  # unter
                            number != 4 and  # ober
                            color != 1 and  # herz
                            (color, 7) not in player_cards_set}  # not the ace
         return [g for g in self.games if g[1] != 0 or g[0] in playable_colors]
 
-    def allowed_cards(self, game_state, player_cards):
-        """
-        returns the cards that a player is allowed to play, given the player (specifically cards, position and davongelaufen)
-        and the current game_state (specifically, first card of trick and game type)
-        """
-        allowed_cards = []
+    def allowed_cards(self, game_state: "PublicGameState", player_cards: list[Card]) -> list[Card]:
+        """Return the cards a player is allowed to play in the current trick.
 
-        trump_set = self.get_trump_set(game_state.game_type)
-        rufsau = (game_state.game_type[0], 7)  # might be invalid if a solo is played
+        Takes into account the player's hand, position in the trick,
+        the first card played, the game type, and Davonlaufen status.
+
+        Parameters
+        ----------
+        game_state : PublicGameState
+            The current public game state.
+        player_cards : list[Card]
+            The current player's hand.
+
+        Returns
+        -------
+        list[Card]
+            Cards the player is allowed to play.
+        """
+        allowed_cards: list[Card] = []
+
+        trump_set: frozenset[Card] = self.get_trump_set(game_state.game_type)
+        rufsau: Card = (game_state.game_type[0], 7)  # might be invalid if a solo is played
 
         first_player_of_trick = game_state.first_player if game_state.trick_number == 0 else game_state.trick_owner[
             game_state.trick_number - 1]
@@ -226,14 +294,22 @@ class Rules:
 
         return allowed_cards
 
-    def allowed_contra_retour(self, game_state, player_cards):
-        """
-        returns if it is allowed for the player to double the game at the current point in the game
+    def allowed_contra_retour(self, game_state: "PublicGameState", player_cards: list[Card]) -> list[bool]:
+        """Return whether the player may double (contra/retour) the game.
 
-        :param game_state: current game state
-        :return: [True, False]  if it is possible to double otherwise [False]
+        Parameters
+        ----------
+        game_state : PublicGameState
+            The current public game state.
+        player_cards : list[Card]
+            The current player's hand.
+
+        Returns
+        -------
+        list[bool]
+            ``[False, True]`` if doubling is allowed, ``[False]`` otherwise.
         """
-        allowed = [False]
+        allowed: list[bool] = [False]
 
         if not any(game_state.contra) and game_state.game_stage == Rules.CONTRA:  # contra check
             allowed.append(True)
@@ -250,9 +326,23 @@ class Rules:
 
         return allowed
 
-    def highest_game(self, bidding_round, first_player):
-        current_highest_game = (None, None)
-        game_player = None
+    def highest_game(self, bidding_round: list[Optional[GameType]], first_player: int) -> tuple[Optional[int], GameType]:
+        """Determine the winning bid from the bidding round.
+
+        Parameters
+        ----------
+        bidding_round : list[Optional[GameType]]
+            Each player's bid (or ``(None, None)`` for pass).
+        first_player : int
+            Index of the player who bids first.
+
+        Returns
+        -------
+        tuple[Optional[int], GameType]
+            ``(game_player (index), game_type)`` of the highest bid.
+        """
+        current_highest_game: GameType = (None, None)
+        game_player: Optional[int] = None
         for p in range(4):
             player_id = (first_player + p) % 4
             game_type = bidding_round[player_id]
@@ -261,15 +351,41 @@ class Rules:
                 game_player = player_id
         return (game_player, current_highest_game)
 
-    # return the player id who played the highest card in the trick, trick needs to be sorted by player id
-    def trick_owner(self, trick, first_player, game_type):
-        highest_card_index = first_player
+    def trick_owner(self, trick: list[Card], first_player: int, game_type: GameType) -> int:
+        """Return the player who won the trick.
+
+        Parameters
+        ----------
+        trick : list[Card]
+            Cards played in this trick, indexed by player id.
+        first_player : int
+            Index of the player who led the trick.
+        game_type : GameType
+            The current game type.
+
+        Returns
+        -------
+        int
+            Player index of the trick winner.
+        """
+        highest_card_index: int = first_player
         for i in range(1, 4):
             player_id = (first_player + i) % 4
             if self.higher_card(game_type, trick[highest_card_index], trick[player_id]):
                 highest_card_index = player_id
         return highest_card_index
 
-    # return the number of points in trick
-    def count_points(self, trick_cards):
+    def count_points(self, trick_cards: list[Card]) -> int:
+        """Return the total point value of the cards in a trick.
+
+        Parameters
+        ----------
+        trick_cards : list[Card]
+            The four cards played in the trick.
+
+        Returns
+        -------
+        int
+            Sum of card point values.
+        """
         return sum([self.card_scores[number] for color, number in trick_cards])

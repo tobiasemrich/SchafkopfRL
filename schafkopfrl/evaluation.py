@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Any, Tuple
 from gymnasium.spaces import Discrete
 from ray.rllib.algorithms import Algorithm
 from ray.rllib.core import Columns
@@ -13,27 +13,53 @@ from ray.rllib.utils.metrics import EVALUATION_RESULTS, ENV_RUNNER_RESULTS
 from schafkopfrl.policy.rulebased_policy import RuleBasedRLModule
 
 class TournamentEvaluation:
-    def __init__(self, rl_module_name: str, n_rounds: int):
-        self.rl_module_name = rl_module_name
-        self.n_episodes = n_rounds
+    """Evaluate an RL policy by running a tournament against a rule-based policy.
+
+    Parameters
+    ----------
+    rl_module_name : str
+        Name of the RL module to evaluate.
+    n_rounds : int
+        Number of games per evaluation round.
+    """
+    def __init__(self, rl_module_name: str, n_rounds: int) -> None:
+        self.rl_module_name: str = rl_module_name
+        self.n_episodes: int = n_rounds
 
     def rulebased_tournament_eval_fn(self, algorithm: Algorithm, eval_workers: EnvRunnerGroup) -> Tuple[ResultDict, int, int]:
+        """Run a tournament of the trained policy against a rule-based opponent.
 
-        env = SchafkopfMultiAgentEnv()
-        linear_policy = algorithm.env_runner.module._rl_modules[self.rl_module_name]
-        rulebased_policy = RuleBasedRLModule()  
+        The trained policy plays as players 1 and 3, while the rule-based
+        policy plays as players 0 and 2.
 
-        total_rewards = {"policy": 0.0, "rulebased": 0.0}
+        Parameters
+        ----------
+        algorithm : Algorithm
+            The RLlib algorithm providing the trained module.
+        eval_workers : EnvRunnerGroup
+            Evaluation workers (unused, required by RLlib API).
+
+        Returns
+        -------
+        tuple[ResultDict, int, int]
+            ``(metrics_dict, episodes_this_iter, timesteps_this_iter)``.
+        """
+
+        env: SchafkopfMultiAgentEnv = SchafkopfMultiAgentEnv()
+        linear_policy: Any = algorithm.env_runner.module._rl_modules[self.rl_module_name]
+        rulebased_policy: RuleBasedRLModule = RuleBasedRLModule()  
+
+        total_rewards: dict[str, float] = {"policy": 0.0, "rulebased": 0.0}
 
         for i in range(self.n_episodes):
             obs, info = env.reset(seed=i)
-            done = False
-            rewards = {"player_0": 0.0, "player_1": 0.0, "player_2": 0.0, "player_3": 0.0}
+            done: bool = False
+            rewards: dict[str, float] = {"player_0": 0.0, "player_1": 0.0, "player_2": 0.0, "player_3": 0.0}
             while not done:
                 actions = {}
                 for player_id, pobs in obs.items():
                     if player_id in ["player_1", "player_3"]:
-                        tensor_obs = self.convert_obs_dict_to_tensor(pobs)
+                        tensor_obs: dict[str, torch.Tensor] = self.convert_obs_dict_to_tensor(pobs)
 
                         # Inference with the RLModule
                         logits = linear_policy.forward_inference({"obs": tensor_obs})[Columns.ACTION_DIST_INPUTS]
@@ -51,7 +77,7 @@ class TournamentEvaluation:
         
 
         print(env.env.render())
-        mean_reward = total_rewards["policy"] / self.n_episodes / 2
+        mean_reward: float = total_rewards["policy"] / self.n_episodes / 2
         print("avg_reward_against_rulebased_policy", mean_reward)
         algorithm.metrics.log_value(
             "avg_reward_against_rulebased_policy",
@@ -67,5 +93,19 @@ class TournamentEvaluation:
             )
         return {"avg_reward_against_rulebased_policy": mean_reward}, self.n_episodes, self.n_episodes
 
-    def convert_obs_dict_to_tensor(self, obs_dict, device="cpu"):
+    def convert_obs_dict_to_tensor(self, obs_dict: dict[str, Any], device: str = "cpu") -> dict[str, torch.Tensor]:
+        """Convert a numpy observation dict to batched PyTorch tensors.
+
+        Parameters
+        ----------
+        obs_dict : dict[str, Any]
+            Observation dict with numpy arrays.
+        device : str, optional
+            Target device, by default ``"cpu"``.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            Tensors with an added batch dimension.
+        """
         return {k: torch.tensor(v, dtype=torch.int32, device=device).unsqueeze(0) for k, v in obs_dict.items()} # unsqueezing produces a batch

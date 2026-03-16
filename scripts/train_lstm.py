@@ -16,16 +16,17 @@ from schafkopfrl.policy.rulebased_policy import RuleBasedRLModule
 
 from schafkopfrl.evaluation import TournamentEvaluation
 
-def main():
+def main() -> None:
+    """Configure and launch PPO training with an LSTM policy against a rule-based opponent."""
 
-    storage_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
+    storage_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
     
 
     ray.init(num_cpus=14, num_gpus=1)
     # register the environment
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
-    config = (
+    config: PPOConfig = (
         PPOConfig()
         .environment("SchafkopfMultiAgentEnv")
         .multi_agent(
@@ -66,10 +67,9 @@ def main():
             evaluation_interval=3,  # evaluate every N training iterations
             custom_evaluation_function=TournamentEvaluation("lstm_policy", 30).rulebased_tournament_eval_fn
         )
-        # .callbacks(DebugCallbacks)
     )
 
-    tuner = Tuner(
+    tuner: Tuner = Tuner(
         trainable="PPO",
         param_space=config.to_dict(),
         run_config=ray.air.RunConfig(

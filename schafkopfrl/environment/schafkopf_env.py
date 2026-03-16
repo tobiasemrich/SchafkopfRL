@@ -1,24 +1,39 @@
 import random
+from typing import Any, Optional
 
 from .public_gamestate import PublicGameState
-from .rules import Rules
+from .rules import Rules, Card, GameType
 
-_NONE_CARD = Rules.NONE_CARD
-_RULES = Rules()
+_NONE_CARD: Card = Rules.NONE_CARD
+_RULES: Rules = Rules()
 
 
 class SchafkopfEnv():
+    """Core Schafkopf game environment.
+
+    Manages the full game loop (bidding, contra/retour, trick play) for a
+    four-player Schafkopf game. Tracks game state, player hands, and
+    computes rewards at the end of a game.
+    """
     
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.public_gamestate = None
-        self.player_cards = [None, None, None, None]
-        self.last_allowed_actions = []
-        self.rules = _RULES
+        self.public_gamestate: Optional[PublicGameState] = None
+        self.player_cards: list[Optional[list[Card]]] = [None, None, None, None]
+        self.last_allowed_actions: list = []
+        self.rules: Rules = _RULES
 
 
-    def _compile_state(self):
-        state = {}
+    def _compile_state(self) -> dict[str, Any]:
+        """Compile the current game state into a state dict.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with keys ``game_state``, ``allowed_actions``, and
+            ``current_player_cards``.
+        """
+        state: dict[str, Any] = {}
         state["game_state"] = self.public_gamestate
         state["allowed_actions"] = self.rules.allowed_actions(self.public_gamestate,
                                                               self.player_cards[self.public_gamestate.current_player])
@@ -26,12 +41,24 @@ class SchafkopfEnv():
         self.last_allowed_actions = state["allowed_actions"]
         return state
 
-    def reset(self, seed):
-        rnd = random.Random(seed)
+    def reset(self, seed: Optional[int]) -> tuple[dict[str, Any], None]:
+        """Reset the environment and deal cards randomly.
+
+        Parameters
+        ----------
+        seed : int, optional
+            Random seed for reproducible card dealing.
+
+        Returns
+        -------
+        tuple[dict[str, Any], None]
+            ``(state_dict, None)`` — the initial game state.
+        """
+        rnd: random.Random = random.Random(seed)
         self.public_gamestate = PublicGameState(3)
 
         # deal cards
-        cards = self.rules.cards.copy()
+        cards: list[tuple[int, int]] = self.rules.cards.copy()
         rnd.shuffle(cards)
         self.player_cards = [cards[8 * p:8 * (p + 1)] for p in range(4)]
 
@@ -39,7 +66,25 @@ class SchafkopfEnv():
 
         return self._compile_state(), None
 
-    def step(self, action):
+    def step(self, action: Any) -> tuple[dict[str, Any], list[int], bool]:
+        """Advance the game by one action.
+
+        Parameters
+        ----------
+        action : Any
+            The action taken by the current player (game type, bool, or card).
+
+        Returns
+        -------
+        tuple[dict[str, Any], list[int], bool]
+            ``(state_dict, rewards, terminal)`` where rewards are per-player
+            and terminal indicates whether the game has ended.
+
+        Raises
+        ------
+        Exception
+            If the action is not in the list of allowed actions.
+        """
 
         if action not in self.last_allowed_actions:
             raise Exception("Action not allowed!")
@@ -100,8 +145,8 @@ class SchafkopfEnv():
                 self.public_gamestate.trick_number += 1
 
 
-        terminal = False
-        rewards = [0, 0, 0, 0]
+        terminal: bool = False
+        rewards: list[int] = [0, 0, 0, 0]
         if self.public_gamestate.trick_number == 8:
             terminal = True
             rewards = self.get_rewards()
@@ -109,8 +154,8 @@ class SchafkopfEnv():
 
         return self._compile_state(), rewards, terminal
 
-    def render(self):
-        # prints the game
+    def render(self) -> None:
+        """Print a human-readable representation of the current game state."""
         br = ""
         # only print player cards when game is not finished
         if self.public_gamestate.trick_number != 8:
@@ -189,8 +234,15 @@ class SchafkopfEnv():
         rewards = self.get_rewards()
         print("Rewards: " + str(rewards))
 
-    def get_player_team(self):
-        player_team = [self.public_gamestate.game_player]
+    def get_player_team(self) -> list[int]:
+        """Identify the player team (game caller + partner).
+
+        Returns
+        -------
+        list[int]
+            Player indices belonging to the calling team.
+        """
+        player_team: list[int] = [self.public_gamestate.game_player]
         if self.public_gamestate.game_type[1] == 0:  # Sauspiel
             rufsau = (self.public_gamestate.game_type[0], 7)
             for trick in range(8):
@@ -199,22 +251,32 @@ class SchafkopfEnv():
                         player_team.append(player_id)
         return player_team
 
-    def get_rewards(self):
+    def get_rewards(self) -> Optional[list[int]]:
+        """Compute per-player rewards at the end of a game.
+
+        Takes into account base reward, Schneider/Schwarz, Laufende,
+        and Contra/Retour multipliers.
+
+        Returns
+        -------
+        list[int] or None
+            Per-player reward list, or None if the game is not finished.
+        """
         if self.public_gamestate.trick_number != 8:
             return None
 
-        rewards = [0, 0, 0, 0]
+        rewards: list[int] = [0, 0, 0, 0]
 
         if self.public_gamestate.game_type == _NONE_CARD:
             return rewards
 
-        player_team_points = 0
-        player_team = self.get_player_team()
+        player_team_points: int = 0
+        player_team: list[int] = self.get_player_team()
         for player_id in player_team:
             player_team_points += self.public_gamestate.scores[player_id]
 
         # basic reward
-        reward = self.rules.reward_basic[self.public_gamestate.game_type[1] + 1]
+        reward: int = self.rules.reward_basic[self.public_gamestate.game_type[1] + 1]
 
         # add schneider/schwarz bonus
         if player_team_points > self.rules.winning_thresholds[4] or player_team_points <= self.rules.winning_thresholds[
@@ -225,8 +287,8 @@ class SchafkopfEnv():
             reward += self.rules.reward_schneider[1]
 
         # add Laufende
-        laufende = 0
-        joint_player_team_cards = []
+        laufende: int = 0
+        joint_player_team_cards: list[Card] = []
         for p in player_team:
             joint_player_team_cards += [i[p] for i in self.public_gamestate.course_of_game_playerwise]
         for trump in reversed(self.rules.get_sorted_trumps(self.public_gamestate.game_type)):
@@ -264,7 +326,23 @@ class SchafkopfEnv():
 
         return rewards
     
-    def set_state(self, game_state, player_cards):
+    def set_state(self, game_state: PublicGameState, player_cards: list[list[Card]]) -> tuple[dict[str, Any], Optional[list[int]], bool]:
+        """Set the environment to a specific game state.
+
+        Useful for replaying transcripts or MCTS simulations.
+
+        Parameters
+        ----------
+        game_state : PublicGameState
+            The game state to restore.
+        player_cards : list[list[Card]]
+            Cards for each of the four players.
+
+        Returns
+        -------
+        tuple[dict[str, Any], Optional[list[int]], bool]
+            ``(state_dict, rewards, terminal)``.
+        """
         self.public_gamestate = game_state
         self.player_cards = player_cards
         state = self._compile_state()

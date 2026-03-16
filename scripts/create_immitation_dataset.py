@@ -70,8 +70,9 @@ def get_states_actions(game_transcript: dict[str, Any], game_id: int) -> list[di
   """
   env: SchafkopfMultiAgentEnv = SchafkopfMultiAgentEnv()
 
-  # initialize with fixed cards from transcript
-  obs_dict, _ = env.reset_with_fixed_cards([game_transcript["player_hands"][str(i)] for i in range(4)])
+  # initialize with fixed cards from transcript (convert JSON lists to tuples)
+  obs_dict, _ = env.reset_with_fixed_cards(
+      [[(c[0], c[1]) for c in game_transcript["player_hands"][str(i)]] for i in range(4)])
   # initialize current agent/obs from obs_dict (env returns the acting agent's obs as sole entry)
   current_agent_id, current_obs = deepcopy(next(iter(obs_dict.items())))
   
@@ -80,7 +81,7 @@ def get_states_actions(game_transcript: dict[str, Any], game_id: int) -> list[di
   final_rewards: dict[str, float] = {'player_0':0, 'player_1':0, 'player_2':0, 'player_3':0}
   # ------------------ BIDDING STAGE ------------------
   game_player: int | None = None
-  game_type: list[int | None] | None = None
+  game_type: tuple[int | None, int | None] | None = None
 
   # Determine who bid and which game type (if any)
   if len(game_transcript["bidding_round"]) != 4:  # not all said weiter
@@ -98,25 +99,25 @@ def get_states_actions(game_transcript: dict[str, Any], game_id: int) -> list[di
     # remove player name in case it contains one of the following words
     player_bidding = player_bidding.split(' ', 1)[1]
     if "Hundsgfickte" in player_bidding:
-      game_type = [0, 0]
+      game_type = (0, 0)
     elif "Blaue" in player_bidding:
-      game_type = [2, 0]
+      game_type = (2, 0)
     elif "Alte" in player_bidding:
-      game_type = [3, 0]
+      game_type = (3, 0)
     elif "Schelle" in player_bidding:
-      game_type = [0, 2]
+      game_type = (0, 2)
     elif "Herz" in player_bidding:
-      game_type = [1, 2]
+      game_type = (1, 2)
     elif "Gras" in player_bidding:
-      game_type = [2, 2]
+      game_type = (2, 2)
     elif "Eichel" in player_bidding:
-      game_type = [3, 2]
+      game_type = (3, 2)
     elif "Wenz" in player_bidding:
-      game_type = [None, 1]
+      game_type = (None, 1)
 
   # four bidding actions (weiter or selected game)
   for i in range(4):
-    action: list[int | None] = [None, None]
+    action: tuple[int | None, int | None] = (None, None)
     if game_player is not None and i == game_player:
       action = game_type
 
@@ -197,7 +198,7 @@ def get_states_actions(game_transcript: dict[str, Any], game_id: int) -> list[di
     # ------------------ TRICK STAGE ------------------
     for trick in range(8):
       for c in range(4):
-        action = game_transcript["course_of_game"][trick][c]
+        action = tuple(game_transcript["course_of_game"][trick][c])
         action_idx = int(preprocess_action(Rules.TRICK, action).item())
 
         agent_id = current_agent_id

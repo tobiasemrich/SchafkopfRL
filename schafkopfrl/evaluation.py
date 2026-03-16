@@ -46,10 +46,20 @@ class TournamentEvaluation:
         """
 
         env: SchafkopfMultiAgentEnv = SchafkopfMultiAgentEnv()
-        linear_policy: Any = algorithm.env_runner.module._rl_modules[self.rl_module_name]
+        # env_runner is None for offline algorithms (e.g. BC); fall back to learner
+        if algorithm.env_runner is not None and algorithm.env_runner.module is not None:
+            linear_policy: Any = algorithm.env_runner.module._rl_modules[self.rl_module_name]
+        else:
+            linear_policy = algorithm.learner_group._learner.module[self.rl_module_name]
         rulebased_policy: RuleBasedRLModule = RuleBasedRLModule()  
 
         total_rewards: dict[str, float] = {"policy": 0.0, "rulebased": 0.0}
+
+        # Determine device from model parameters
+        try:
+            device: torch.device = next(linear_policy.parameters()).device
+        except StopIteration:
+            device = torch.device("cpu")
 
         for i in range(self.n_episodes):
             obs, info = env.reset(seed=i)
@@ -59,7 +69,7 @@ class TournamentEvaluation:
                 actions = {}
                 for player_id, pobs in obs.items():
                     if player_id in ["player_1", "player_3"]:
-                        tensor_obs: dict[str, torch.Tensor] = self.convert_obs_dict_to_tensor(pobs)
+                        tensor_obs: dict[str, torch.Tensor] = self.convert_obs_dict_to_tensor(pobs, device=str(device))
 
                         # Inference with the RLModule
                         logits = linear_policy.forward_inference({"obs": tensor_obs})[Columns.ACTION_DIST_INPUTS]

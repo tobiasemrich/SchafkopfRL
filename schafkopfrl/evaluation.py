@@ -10,6 +10,7 @@ import torch
 from torch.distributions import Categorical
 from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
 from ray.rllib.utils.metrics import EVALUATION_RESULTS, ENV_RUNNER_RESULTS
+from schafkopfrl.policy.lstmrlmodule import LSTMRLModule
 from schafkopfrl.policy.rulebased_policy import RuleBasedRLModule
 
 class TournamentEvaluation:
@@ -48,16 +49,33 @@ class TournamentEvaluation:
         env: SchafkopfMultiAgentEnv = SchafkopfMultiAgentEnv()
         # env_runner is None for offline algorithms (e.g. BC); fall back to learner
         if algorithm.env_runner is not None and algorithm.env_runner.module is not None:
-            linear_policy: Any = algorithm.env_runner.module._rl_modules[self.rl_module_name]
-        else:
-            linear_policy = algorithm.learner_group._learner.module[self.rl_module_name]
+            policy: Any = algorithm.env_runner.module._rl_modules[self.rl_module_name]
+        else: #more complicated for the case of behavioural cloning
+            state_dicts = algorithm.learner_group.foreach_learner(
+                lambda l: l.module[self.rl_module_name].get_state()
+            )
+            rl_module_state = list(state_dicts)[0].get()
+            policy = LSTMRLModule(
+                observation_space=env.observation_space,
+                action_space=env.action_space,
+                model_config={
+                    "fcnet_hiddens": [64, 64],
+                    "lstm_hidden_size": 128,
+                    "lstm_num_layers": 1
+                }
+            )
+            policy.set_state(rl_module_state)
+            policy.eval() # Set to evaluation mode
+            device = torch.device("cpu")
+            policy.to(device)
+            
         rulebased_policy: RuleBasedRLModule = RuleBasedRLModule()  
 
         total_rewards: dict[str, float] = {"policy": 0.0, "rulebased": 0.0}
 
         # Determine device from model parameters
         try:
-            device: torch.device = next(linear_policy.parameters()).device
+            device: torch.device = next(policy.parameters()).device
         except StopIteration:
             device = torch.device("cpu")
 
@@ -72,7 +90,7 @@ class TournamentEvaluation:
                         tensor_obs: dict[str, torch.Tensor] = self.convert_obs_dict_to_tensor(pobs, device=str(device))
 
                         # Inference with the RLModule
-                        logits = linear_policy.forward_inference({"obs": tensor_obs})[Columns.ACTION_DIST_INPUTS]
+                        logits = policy.forward_inference({"obs": tensor_obs})[Columns.ACTION_DIST_INPUTS]
                         dist = Categorical(logits=logits)
                         actions[player_id] = torch.tensor([dist.sample().item()])
                     else:

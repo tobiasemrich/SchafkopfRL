@@ -18,23 +18,16 @@ from schafkopfrl.evaluation import TournamentEvaluation
 
 def main() -> None:
     """Configure and launch Behavioral Cloning training from expert data."""
-    ray.init(num_cpus=4, num_gpus=1)
+    ray.init(num_cpus=6, num_gpus=1)
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
-    data_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "expert_data.jsonl")
+    data_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "expert_data_small_10k.jsonl")
     storage_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
 
     config: BCConfig = (
         BCConfig()
         .environment(
-            "SchafkopfMultiAgentEnv",
-            observation_space=Dict({
-                "player_hand": Box(low=0, high=1, shape=(32,), dtype=np.float32),
-                "action_history": Box(low=-1, high=42, shape=(88,), dtype=np.float32),
-                "action_history_len": Box(low=0, high=44, shape=(1,), dtype=np.float32),
-                "action_mask": Box(low=0, high=1, shape=(43,), dtype=np.float32),
-            }),
-            action_space=Discrete(43),
+            "SchafkopfMultiAgentEnv"
         )
         .offline_data(
             input_=[data_path],
@@ -53,13 +46,14 @@ def main() -> None:
             )
         )
         .training(
-            lr=0.01,
-            train_batch_size_per_learner=128,
+            lr=0.001,
+            train_batch_size_per_learner=32000,
             grad_clip=0.2,
         )
-        .learners(num_learners=0, num_gpus_per_learner=1)
+        .learners(num_learners=1, num_gpus_per_learner=1)
         .evaluation(
             evaluation_interval=3,
+            evaluation_num_env_runners=1,
             custom_evaluation_function=TournamentEvaluation("default_policy", 30).rulebased_tournament_eval_fn
         )
     )
@@ -70,7 +64,7 @@ def main() -> None:
         run_config=RunConfig(
             storage_path=storage_path,
             name="bc_run",
-            stop={"training_iteration": 10},
+            stop={"training_iteration": 1000},
         ),
         tune_config=TuneConfig(num_samples=1),
     )

@@ -232,6 +232,9 @@ class SchafkopfMultiAgentEnv(MultiAgentEnv):
         )
 
         ############### action history ##################
+        ego_history = self.action_history.copy()
+        mask = ego_history[:, 1] != -1
+        ego_history[mask, 1] = (ego_history[mask, 1] - ego)%4
         observation["action_history"] = self.action_history.flatten()
         observation["action_history_len"] = int(self.action_history_len)
 

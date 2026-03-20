@@ -39,7 +39,7 @@ def main() -> None:
             print("Read " + str(count) + " normal games")
             print(len(all_rows))
           # For testing, limit to 100 games
-          if count >= 1000:
+          if count >= 10:
             break
           for row in final_rows:
             # Convert entire row recursively

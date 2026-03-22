@@ -1,6 +1,7 @@
 import rootutils
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
+import os
 from os import listdir
 from copy import deepcopy
 import torch
@@ -20,37 +21,55 @@ rules: Rules = Rules()
 
 
 def main() -> None:
-  """Parse game transcripts and write expert data to JSONL for BC training."""
-  all_rows: list[dict[str, Any]] = []
-  # load and preprocess database
+  """Parse game transcripts and write sharded expert data to JSONL for BC training."""
+  SHARD_SIZE: int = 20_000  # games per shard
+  output_dir: str = 'data'
+  os.makedirs(output_dir, exist_ok=True)
+
   count: int = 0
+  total_rows: int = 0
+  shard_idx: int = 0
+  shard_file = None
+  shard_row_count: int = 0
+
   with open('data/normal_games.json', 'r') as file:
     games = json.load(file)
 
-    with open('data/expert_data_small.jsonl', 'w') as f:
+    for game_id, g in enumerate(games):
+      game = g
+      if len(game["sonderregeln"]) == 0:
+        # Open a new shard file when needed
+        if shard_file is None:
+          shard_path = os.path.join(output_dir, f'expert_data_shard_{shard_idx:03d}.jsonl')
+          shard_file = open(shard_path, 'w')
+          shard_row_count = 0
+          print(f"Writing shard {shard_idx}: {shard_path}")
 
-      for game_id, g in enumerate(games):
-        game = g # GameTranscript.from_dict(g)
-        if len(game["sonderregeln"]) == 0:
-          count += 1
-          final_rows: list[dict[str, Any]] = get_states_actions(game, game_id=game_id)
-          all_rows += final_rows
-          if count % 1000 == 0:
-            print("Read " + str(count) + " normal games")
-            print(len(all_rows))
-          # For testing, limit to 100 games
-          if count >= 10:
-            break
-          for row in final_rows:
-            # Convert entire row recursively
-            row_serializable: Any = convert_to_serializable(row)
-            json.dump(row_serializable, f)
-            f.write('\n')
-      #df = pd.DataFrame(all_rows)
-      #parquet_path = '/home/git/SchafkopfRL/expert_data.parquet'
-      #df.to_parquet(parquet_path, engine='pyarrow', compression='snappy')
+        count += 1
+        final_rows: list[dict[str, Any]] = get_states_actions(game, game_id=game_id)
+        for row in final_rows:
+          row_serializable: Any = convert_to_serializable(row)
+          json.dump(row_serializable, shard_file)
+          shard_file.write('\n')
+        shard_row_count += len(final_rows)
+        total_rows += len(final_rows)
 
-  print(f"Saved {len(all_rows)} rows to expert_data.jsonl")
+        if count % 1000 == 0:
+          print(f"Read {count} normal games ({total_rows} rows total, shard {shard_idx}: {shard_row_count} rows)")
+
+        # Close shard and start a new one after SHARD_SIZE games
+        if count % SHARD_SIZE == 0:
+          shard_file.close()
+          print(f"Finished shard {shard_idx} with {shard_row_count} rows")
+          shard_file = None
+          shard_idx += 1
+
+  # Close the last shard if it's still open
+  if shard_file is not None:
+    shard_file.close()
+    print(f"Finished shard {shard_idx} with {shard_row_count} rows")
+
+  print(f"Saved {total_rows} rows across {shard_idx + 1} shards from {count} games")
 
 
 def get_states_actions(game_transcript: dict[str, Any], game_id: int) -> list[dict[str, Any]]:

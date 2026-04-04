@@ -22,8 +22,8 @@ rules: Rules = Rules()
 
 def main() -> None:
   """Parse game transcripts and write sharded expert data to JSONL for BC training."""
-  SHARD_SIZE: int = 20_000  # games per shard
-  output_dir: str = 'data'
+  SHARD_SIZE: int = 5_000  # games per shard
+  output_dir: str = 'data/shards'
   os.makedirs(output_dir, exist_ok=True)
 
   count: int = 0

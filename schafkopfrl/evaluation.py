@@ -59,9 +59,9 @@ class TournamentEvaluation:
                 observation_space=env.observation_space,
                 action_space=env.action_space,
                 model_config={
-                    "fcnet_hiddens": [64, 64],
+                    "fcnet_hiddens": [128, 128],
                     "lstm_hidden_size": 128,
-                    "lstm_num_layers": 1
+                    "lstm_num_layers": 2
                 }
             )
             policy.set_state(rl_module_state)

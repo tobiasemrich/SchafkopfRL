@@ -21,7 +21,13 @@ def main() -> None:
     ray.init(num_cpus=6, num_gpus=1)
     register_env("SchafkopfMultiAgentEnv", lambda config: SchafkopfMultiAgentEnv(config))
 
-    data_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "expert_data_small_10k.jsonl")
+    data_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "shards")
+    num_shards = 77
+    input_data_paths = []
+    for shard_idx in range(num_shards):
+        shard_path = os.path.join(data_path, f'expert_data_shard_{shard_idx:03d}.jsonl')
+        input_data_paths.append(shard_path)
+
     storage_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ray_results")
 
     config: BCConfig = (
@@ -30,31 +36,34 @@ def main() -> None:
             "SchafkopfMultiAgentEnv"
         )
         .offline_data(
-            input_=[data_path],
+            input_=input_data_paths,
             input_read_method="read_json",
             input_read_sample_batches=False,
             dataset_num_iters_per_learner=10,
+            materialize_data=False,
+            materialize_mapped_data=False
         )
         .rl_module(
             rl_module_spec=RLModuleSpec(
                 module_class=LSTMRLModule,
                 model_config={
-                    "fcnet_hiddens": [64, 64],
+                    "fcnet_hiddens": [128, 128],
                     "lstm_hidden_size": 128,
-                    "lstm_num_layers": 1
+                    "lstm_num_layers": 2
                 },
             )
         )
         .training(
-            lr=0.001,
+            lr=0.0005,
             train_batch_size_per_learner=32000,
             grad_clip=0.2,
+            num_sgd_iter=4
         )
         .learners(num_learners=1, num_gpus_per_learner=1)
         .evaluation(
-            evaluation_interval=3,
+            evaluation_interval=20,
             evaluation_num_env_runners=1,
-            custom_evaluation_function=TournamentEvaluation("default_policy", 30).rulebased_tournament_eval_fn
+            custom_evaluation_function=TournamentEvaluation("default_policy", 200).rulebased_tournament_eval_fn
         )
     )
 
@@ -64,7 +73,7 @@ def main() -> None:
         run_config=RunConfig(
             storage_path=storage_path,
             name="bc_run",
-            stop={"training_iteration": 1000},
+            stop={"training_iteration": 100000},
         ),
         tune_config=TuneConfig(num_samples=1),
     )

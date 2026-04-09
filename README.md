@@ -5,6 +5,17 @@ Currently switching to RLLib for
 - plethora of algorithms
 - easier to understand + extend
 
+# Repo Structure
+
+SchafkopfRL/
+├── schafkopfrl/            # core package
+│   ├── environment         # schafkopf environment
+│   ├── policy              # trainable and non-trainable policies
+├── scripts/                # scripts to start training, process data, evaluate, ...
+├── sauspiel_interface/     # crawler and interface to interact with sauspiel
+
+
+
 ## Next Steps
 - [x] Rework Schafkopf_env to be compatible with RLLib
 - [x] LSTM Agent

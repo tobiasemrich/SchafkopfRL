@@ -7,13 +7,14 @@ Currently switching to RLLib for
 
 # Repo Structure
 
+```
 SchafkopfRL/
 ├── schafkopfrl/            # core package
 │   ├── environment         # schafkopf environment
 │   ├── policy              # trainable and non-trainable policies
 ├── scripts/                # scripts to start training, process data, evaluate, ...
 ├── sauspiel_interface/     # crawler and interface to interact with sauspiel
-
+```
 
 
 ## Next Steps

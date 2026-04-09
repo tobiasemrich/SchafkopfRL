@@ -4,10 +4,10 @@ from os import listdir
 import numpy as np
 import torch
 
-from game_statistics import GameStatistics
-from memory import Memory
-from models.actor_critic_linear import ActorCriticNetworkLinear
-from schafkopf_env import SchafkopfEnv
+from legacy.game_statistics import GameStatistics
+from legacy.memory import Memory
+from legacy.models.actor_critic_linear import ActorCriticNetworkLinear
+from legacy.schafkopf_env import SchafkopfEnv
 from schafkopfrl.players.random_coward_player import RandomCowardPlayer
 from schafkopfrl.players.random_player import RandomPlayer
 from schafkopfrl.players.rl_player import RlPlayer
@@ -16,7 +16,7 @@ from schafkopfrl.ppo import PPO
 
 from tensorboard import program
 
-from settings import Settings
+from legacy.settings import Settings
 
 
 def main():

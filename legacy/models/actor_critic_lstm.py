@@ -42,7 +42,7 @@ class ActorCriticNetworkLSTM(nn.Module):
         self.fc4a = nn.Linear(self.hidden_neurons, 43)
         self.fc4b = nn.Linear(self.hidden_neurons, 1)
 
-        from settings import Settings
+        from legacy.settings import Settings
         self.device = Settings.device
 
 

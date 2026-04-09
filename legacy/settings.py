@@ -4,9 +4,9 @@ from os import path
 import torch
 
 from torch.utils.tensorboard import SummaryWriter
-from dataset import ExperienceDatasetLinear, ExperienceDatasetLSTM
-from models.actor_critic_lstm import ActorCriticNetworkLSTM
-from models.actor_critic_sep import ActorCriticNetworkLSTMSep
+from legacy.dataset import ExperienceDatasetLinear, ExperienceDatasetLSTM
+from legacy.models.actor_critic_lstm import ActorCriticNetworkLSTM
+from legacy.models.actor_critic_sep import ActorCriticNetworkLSTMSep
 
 
 class Settings:

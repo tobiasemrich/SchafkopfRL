@@ -6,17 +6,17 @@ import torch
 from torch import nn
 from torch.utils import data
 
-from dataset import PredictionDatasetLSTM
-from game_statistics import GameStatistics
-from models.hand_predictor import HandPredictor
-from players.hp_pimc_player import HPPIMCPlayer
-from schafkopf_env import SchafkopfEnv
-from players.random_player import RandomPlayer
-from players.rl_player import RlPlayer
+from legacy.dataset import PredictionDatasetLSTM
+from legacy.game_statistics import GameStatistics
+from legacy.models.hand_predictor import HandPredictor
+from legacy.players.hp_pimc_player import HPPIMCPlayer
+from legacy.schafkopf_env import SchafkopfEnv
+from legacy.players.random_player import RandomPlayer
+from legacy.players.rl_player import RlPlayer
 
 from tensorboard import program
 
-from settings import Settings
+from legacy.settings import Settings
 
 
 def main():

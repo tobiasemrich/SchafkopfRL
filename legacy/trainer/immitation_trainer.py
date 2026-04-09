@@ -4,13 +4,13 @@ from os import listdir
 import torch
 from sqlitedict import SqliteDict
 
-from dataset import PredictionDatasetLSTM
-from models.actor_critic_lstm import ActorCriticNetworkLSTM
-from models.immitation_policy import ImmitationPolicy
+from legacy.dataset import PredictionDatasetLSTM
+from legacy.models.actor_critic_lstm import ActorCriticNetworkLSTM
+from legacy.models.immitation_policy import ImmitationPolicy
 from public_gamestate import PublicGameState
 from rules import Rules
-from schafkopf_env import SchafkopfEnv
-from settings import Settings
+from legacy.schafkopf_env import SchafkopfEnv
+from legacy.settings import Settings
 from tensorboard import program
 import numpy as np
 from torch.utils import data

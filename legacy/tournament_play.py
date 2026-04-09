@@ -2,17 +2,17 @@ import time
 
 import torch
 
-from models.actor_critic_lstm import ActorCriticNetworkLSTM
-from models.hand_predictor import HandPredictor
-from models.immitation_policy import ImmitationPolicy
-from players.pimc_player import PIMCPlayer
-from players.random_coward_player import RandomCowardPlayer
-from players.random_player import RandomPlayer
-from players.rl_player import RlPlayer
-from players.rule_based_player import RuleBasedPlayer
-from players.hp_pimc_player import HPPIMCPlayer
-from schafkopf_env import SchafkopfEnv
-from settings import Settings
+from legacy.models.actor_critic_lstm import ActorCriticNetworkLSTM
+from legacy.models.hand_predictor import HandPredictor
+from legacy.models.immitation_policy import ImmitationPolicy
+from legacy.players.pimc_player import PIMCPlayer
+from legacy.players.random_coward_player import RandomCowardPlayer
+from legacy.players.random_player import RandomPlayer
+from legacy.players.rl_player import RlPlayer
+from legacy.players.rule_based_player import RuleBasedPlayer
+from legacy.players.hp_pimc_player import HPPIMCPlayer
+from legacy.schafkopf_env import SchafkopfEnv
+from legacy.settings import Settings
 
 
 def main():

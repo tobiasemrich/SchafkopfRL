@@ -1,10 +1,10 @@
 from torch.distributions import Categorical
 
-from players.mcts.mct import MonteCarloTree
+from legacy.players.mcts.mct import MonteCarloTree
 from public_gamestate import PublicGameState
 from rules import Rules
-from schafkopf_env import SchafkopfEnv
-from players.player import Player
+from legacy.schafkopf_env import SchafkopfEnv
+from legacy.players.player import Player
 import random
 import numpy as np
 

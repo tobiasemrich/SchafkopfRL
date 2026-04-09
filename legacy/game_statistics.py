@@ -1,4 +1,4 @@
-from settings import Settings
+from legacy.settings import Settings
 import numpy as np
 
 class GameStatistics:

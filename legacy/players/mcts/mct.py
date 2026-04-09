@@ -1,8 +1,8 @@
 import random
 
-from players.mcts.node import Node
-from players.random_player import RandomPlayer
-from schafkopf_env import SchafkopfEnv
+from legacy.players.mcts.node import Node
+from legacy.players.random_player import RandomPlayer
+from legacy.schafkopf_env import SchafkopfEnv
 from copy import deepcopy, copy
 
 

@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import StepLR
 
 from torch.utils import data
-from settings import Settings
+from legacy.settings import Settings
 
 
 class PPO:

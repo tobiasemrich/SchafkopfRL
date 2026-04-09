@@ -6,7 +6,7 @@ from torch.autograd import Variable
 from torch.distributions import Categorical
 
 from rules import Rules
-from settings import Settings
+from legacy.settings import Settings
 from utils import two_hot_encode_game, two_hot_encode_card, one_hot_cards, one_hot_games
 
 
@@ -38,7 +38,7 @@ class ImmitationPolicy(nn.Module):
         self.fc3 = nn.Linear(self.hidden_neurons, self.hidden_neurons)
         self.fc4 = nn.Linear(self.hidden_neurons, 43)
 
-        from settings import Settings
+        from legacy.settings import Settings
         self.device = Settings.device
 
 

@@ -2,3 +2,4 @@
 __pycache__/
 data/
 ray_results/
+credentials.py

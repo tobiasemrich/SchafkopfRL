@@ -1,5 +1,3 @@
-import json
-
 from lxml import etree
 from io import StringIO
 

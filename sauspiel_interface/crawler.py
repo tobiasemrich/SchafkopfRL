@@ -1,6 +1,5 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
@@ -11,11 +10,11 @@ from game_transcript import GameTranscript
 import credentials
 import json
 
-'''
-To run the crawler you will need 
-- the chromedriver installed
-- become Vereinsmitglied at Sauspiel to get access to all games
-'''
+####################################################################
+# To run the crawler you will need 
+# - the chromedriver installed
+# - become Vereinsmitglied at Sauspiel to get access to all games
+####################################################################
 
 def format_json(obj, indent=0):
     indent_str = ' ' * indent
@@ -44,8 +43,6 @@ def crawl():
   options.add_argument("--no-sandbox")
   options.add_argument("--disable-dev-shm-usage")
   options.add_argument("--window-size=1920,1080")
-  #options.add_argument("--start-maximized")
-  #options.add_experimental_option("detach", True)
   service = Service(executable_path="/usr/bin/chromedriver")
   driver = webdriver.Chrome(service=service, options=options)
   driver.get("http://www.sauspiel.de")
@@ -62,7 +59,6 @@ def crawl():
   password_input.send_keys(credentials.password)
   password_input.send_keys(Keys.RETURN)
 
-  #setup database
   games = []
 
   normal_games = 0
@@ -90,7 +86,6 @@ def crawl():
     with open('data/crawled_games.json', 'w') as f:
       f.write(format_json(games))
   print("found "+str(normal_games) + " normal games")
-
 
 
 

@@ -16,6 +16,13 @@ SchafkopfRL/
 ├── sauspiel_interface/     # crawler and interface to interact with sauspiel
 ```
 
+# BC Experiments
+
+| model | model config | agains rule-based (max) | accuracy (max) | comment |
+| --- | ------------ | ----------------------- | -------------- | --- |
+| LSTM | [128, 128], 128, 2 |  6.95 | 0.853 | batch: 32000
+| Transformer | [128, 128], 128, 2, 2 | 5.00 | 83.9 | batch: 8000
+
 
 ## Next Steps
 - [x] Rework Schafkopf_env to be compatible with RLLib

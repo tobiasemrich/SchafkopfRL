@@ -1,4 +1,4 @@
 .venv
 __pycache__/
 data/
-ray_results/
+runs/

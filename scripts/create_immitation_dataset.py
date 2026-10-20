@@ -8,7 +8,7 @@ import torch
 from sqlitedict import SqliteDict
 import sys
 
-from schafkopfrl.environment.multi_agent_env import SchafkopfMultiAgentEnv
+from schafkopfrl.environment.pettingzoo_env import SchafkopfAECEnv
 from tensorboard import program
 import numpy as np
 
@@ -18,6 +18,29 @@ import pandas as pd
 from typing import Any
 
 rules: Rules = Rules()
+
+
+class ReplayEnv:
+  """Dict-style step API (acting agent -> obs) on top of ``SchafkopfAECEnv`` for replaying transcripts."""
+
+  def __init__(self) -> None:
+    self.aec: SchafkopfAECEnv = SchafkopfAECEnv()
+    self.agents: list[str] = self.aec.possible_agents
+
+  def _acting_obs(self) -> dict[str, Any]:
+    agent = self.aec.agent_selection
+    return {agent: self.aec.observe(agent)}
+
+  def reset_with_fixed_cards(self, player_cards: list) -> tuple[dict[str, Any], dict]:
+    self.aec.reset(options={"player_cards": player_cards})
+    return self._acting_obs(), {}
+
+  def step(self, action_dict: dict[str, int]) -> tuple[dict, dict, dict, dict, dict]:
+    (agent, action), = action_dict.items()
+    assert agent == self.aec.agent_selection
+    self.aec.step(action)
+    done: bool = all(self.aec.terminations.values())
+    return self._acting_obs(), dict(self.aec.rewards), {"__all__": done}, {"__all__": False}, {}
 
 
 def main() -> None:
@@ -87,7 +110,7 @@ def get_states_actions(game_transcript: dict[str, Any], game_id: int) -> list[di
   list[dict[str, Any]]
       List of ``(obs, new_obs, actions, rewards, ...)`` dicts per agent step.
   """
-  env: SchafkopfMultiAgentEnv = SchafkopfMultiAgentEnv()
+  env: ReplayEnv = ReplayEnv()
 
   # initialize with fixed cards from transcript (convert JSON lists to tuples)
   obs_dict, _ = env.reset_with_fixed_cards(

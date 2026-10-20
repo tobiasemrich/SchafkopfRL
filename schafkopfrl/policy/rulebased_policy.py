@@ -1,39 +1,27 @@
 from typing import Any
 
 import random
-from ray.rllib.core import Columns
-from ray.rllib.core.rl_module.rl_module import RLModule
-from ray.rllib.utils.typing import ModuleID
-from ray.rllib.utils.annotations import override
 from schafkopfrl.environment.rules import Rules, Card, GameType
 from schafkopfrl.environment.public_gamestate import PublicGameState
-import numpy as np
-from torch import nn
 
 
-class RuleBasedRLModule(RLModule):
+class RuleBasedPolicy:
     """Heuristic rule-based policy for Schafkopf.
 
     Implements simple hand-crafted rules for bidding, contra/retour, and
     card selection. Useful as a baseline opponent for evaluation.
     """
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    def __init__(self) -> None:
         self.rules: Rules = Rules()
 
-    @override(RLModule)
-    def _forward(self, batch: dict[str, Any], **kwargs: Any) -> int:
-        return self.rule_based_action(batch)
-
-
-    def rule_based_action(self, state: dict[str, Any]) -> int:
+    def act(self, state: dict[str, Any]) -> int:
         """Select an action index using hand-crafted heuristics.
 
         Parameters
         ----------
         state : dict[str, Any]
-            Raw game state with ``allowed_actions``, ``game_state``,
-            and ``current_player_cards``.
+            Raw game state (``SchafkopfAECEnv.raw_state()``) with ``allowed_actions``,
+            ``game_state`` and ``current_player_cards``.
 
         Returns
         -------

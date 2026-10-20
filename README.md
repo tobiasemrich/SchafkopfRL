@@ -1,9 +1,13 @@
-# RLLib Transition
-Currently switching to RLLib for
-- better abstractions, more open-source, less self-written code
-- environment paralellization => scalable training
-- plethora of algorithms
-- easier to understand + extend
+# TorchRL / PettingZoo Transition
+The environment is a PettingZoo AEC env (`schafkopfrl/environment/pettingzoo_env.py`), wrapped for TorchRL in
+`schafkopfrl/environment/torchrl_env.py`. Training uses TorchRL (collector, GAE, `ClipPPOLoss`) instead of RLlib:
+
+```
+python scripts/train_ppo.py --encoder lstm --num-envs 4      # self-play PPO, evaluated against the rule-based policy
+python scripts/create_immitation_dataset.py                  # expert shards from transcripts
+python scripts/train_bc.py --encoder transformer             # behavioural cloning (last shard = validation)
+python scripts/tournament_play.py                            # PIMC vs rule-based
+```
 
 # Repo Structure
 
@@ -25,7 +29,7 @@ SchafkopfRL/
 
 
 ## Next Steps
-- [x] Rework Schafkopf_env to be compatible with RLLib
+- [x] Rework Schafkopf_env to be compatible with TorchRL / PettingZoo
 - [x] LSTM Agent
 - [x] PIMC agent
 - [x] Tournament

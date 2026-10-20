@@ -1,24 +1,15 @@
 from typing import Any
 
-from ray.rllib.core import Columns
-from ray.rllib.core.rl_module.rl_module import RLModule
-from ray.rllib.utils.annotations import override
-from ray.rllib.models.torch.torch_distributions import TorchCategorical
-from ray.rllib.utils.torch_utils import FLOAT_MIN
-
-from schafkopfrl.environment.utils import *
 from schafkopfrl.environment.rules import Rules, Card
 from schafkopfrl.environment.schafkopf_env import SchafkopfEnv
 from schafkopfrl.environment.public_gamestate import PublicGameState
-import torch.nn as nn
-import torch
 import random
 
 from schafkopfrl.policy.mcts.mct import MonteCarloTree
 
 _NONE_CARD: Card = Rules.NONE_CARD
 
-class PIMCModule(RLModule):
+class PIMCPolicy:
     """Perfect Information Monte Carlo (PIMC) policy for Schafkopf.
 
     Samples possible opponent hand distributions and runs UCT (Monte Carlo
@@ -34,15 +25,13 @@ class PIMCModule(RLModule):
     """
 
     def __init__(self, samples: int, playouts: int) -> None:
-        super().__init__()
         self.samples: int = samples
         self.playouts: int = playouts
         self.rules: Rules = Rules()
 
-    @override(RLModule)
-    def _forward(self, batch: dict[str, Any], **kwargs: Any) -> int:
-        allowed_actions, gamestate, player_cards = (
-            batch["allowed_actions"],
+    def act(self, batch: dict[str, Any]) -> int:
+        """Select an action index from a raw state (``SchafkopfAECEnv.raw_state()``)."""
+        gamestate, player_cards = (
             batch["game_state"],
             batch["current_player_cards"],
         )
